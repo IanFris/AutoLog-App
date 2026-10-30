@@ -1,147 +1,186 @@
-# AutoLog 🛵🚗 — Aplikasi Pencatatan Pemeliharaan Kendaraan Bermotor
+# AutoLog 🛵🚗 — Aplikasi Full-Stack Pencatatan & Pengingat Servis Kendaraan
 
-**AutoLog** adalah aplikasi mobile berbasis **Flutter** yang dirancang khusus untuk pemilik kendaraan bermotor (sepeda motor dan mobil) di Indonesia guna mencatat, memantau, dan mengelola jadwal pemeliharaan, servis rutin, penggantian suku cadang, serta pengeluaran bahan bakar (BBM).
+**AutoLog** adalah aplikasi *full-stack* pencatatan dan pemantauan pemeliharaan kendaraan bermotor (sepeda motor & mobil) yang dikembangkan menggunakan **PHP Native (PDO) + MySQL di Laragon** pada sisi Backend dan **Flutter (Dart)** pada sisi Mobile Frontend.
 
----
-
-## 🌟 Fitur Unggulan
-
-### 1. 🏍️ & 🚙 Manajemen Multi-Kendaraan (Garasi Digital)
-- Kelola lebih dari satu kendaraan (motor & mobil) dalam satu aplikasi.
-- Informasi lengkap: Nama/Panggilan, Merk (Honda, Yamaha, Toyota, dll), Model, Tahun Pembuatan, Nomor Polisi (Plat), Jenis BBM, dan Odometer (KM).
-- Tombol cepat **Update KM** langsung dari kartu kendaraan di dashboard.
-- Alih kendaraan aktif secara instan via pemilih kendaraan interaktif.
-
-### 2. 🔧 Riwayat & Pencatatan Pemeliharaan Komprehensif
-- Pencatatan servis dengan kategori lengkap khas otomotif Indonesia:
-  - **Ganti Oli Mesin** (dengan rekomendasi interval KM)
-  - **Ganti Oli Gardan / Transmisi**
-  - **Servis Berkala / Tune-Up**
-  - **Kampas Rem Depan / Belakang**
-  - **Ganti Busi**
-  - **Filter Udara**
-  - **Ganti Ban & Spooring**
-  - **Aki / Battery Accu**
-  - **CVT Belt & Roller / Rantai & Gear**
-  - **Air Radiator / Coolant**
-  - **Pajak STNK / PKB Tahunan**
-  - **Cuci & Detailing Kendaraan**
-  - **Perbaikan / Suku Cadang Lainnya**
-- Input nama bengkel (AHASS, Planet Ban, Auto2000, Nawilis, Bengkel Mandiri, dll).
-- Tag suku cadang yang diganti (misal: *Oli SPX 2 0.8L*, *Busi CPR9EA-9*, *Kampas Rem Nissin*).
-- Rincian biaya dalam format mata uang Rupiah (`Rp 150.000`).
-- Catatan dan rekomendasi mekanik untuk pengerjaan servis selanjutnya.
-
-### 3. ⏰ Pengingat & Jadwal Servis Pintar (Smart Reminder)
-- Pengingat otomatis dihitung berdasarkan **Target Odometer (KM)** dan/atau **Target Tanggal**.
-- Indikator status visual dengan progress bar:
-  - 🟢 **Jadwal Aman** (Sisa > 500 KM / > 14 hari)
-  - 🟡 **Mendekati Waktu Servis** (Sisa ≤ 500 KM / ≤ 7 hari)
-  - 🔴 **Lewat Batas Servis!** (KM atau tanggal telah terlampaui)
-- Tombol **"Servis Sekarang"**: Membuka formulir servis dengan data yang telah terisi otomatis dan memperbarui pengingat saat selesai.
-
-### 4. ⛽ Catatan Bahan Bakar (BBM Log)
-- Catat setiap pengisian bensin (liter, harga per liter, total biaya, jenis BBM, nama SPBU).
-- Kalkulasi otomatis estimasi efisiensi konsumsi bahan bakar (**KM / Liter**).
-- Penanda tangki penuh (*Full Tank*).
-
-### 5. 📊 Statistik & Analisis Biaya Pengeluaran
-- Ringkasan total pengeluaran: Sepanjang Masa, Tahun Ini, dan Bulan Ini.
-- Estimasi biaya pemeliharaan per kilometer (**Rp / KM**).
-- Grafik batang tren pengeluaran 6 bulan terakhir.
-- Diagram persentase biaya per kategori perawatan.
-
-### 6. 💾 Penyimpanan Lokal & Cadangan Data (Backup/Restore)
-- Data tersimpan permanen di perangkat menggunakan `SharedPreferences` + serialisasi JSON terstruktur.
-- **Ekspor Cadangan (JSON)**: Salin seluruh data ke clipboard untuk backup.
-- **Impor Cadangan (JSON)**: Pulihkan data dengan mudah.
-- **Muat Data Demo**: Contoh realistis Honda Vario 160 ABS & Toyota Avanza 1.5 G CVT lengkap dengan riwayat servis dan jadwal pengingat.
-- **Mode Gelap (Dark Mode)** & **Mode Terang (Light Mode)**.
+Repository ini terbagi ke dalam **3 folder utama**:
+- **`/database`**: Skrip SQL (`schema.sql`) berisi DDL (tabel & relasi Foreign Key) serta DML (data dummy siap pakai).
+- **`/api`**: REST API berbasis PHP Native PDO yang berjalan di Laragon (`C:\laragon\www\autolog\api\`).
+- **`/frontend`**: Source code aplikasi mobile berbasis Flutter (Dart) dengan State Management Provider.
 
 ---
 
-## 🏗️ Struktur Arsitektur Proyek
+## 📁 Struktur Repositori
 
 ```
-lib/
-├── main.dart                          # Titik masuk aplikasi & konfigurasi tema
-├── models/
-│   ├── vehicle.dart                   # Model Kendaraan (Motor / Mobil, Plat, KM)
-│   ├── maintenance_record.dart        # Model Catatan Servis & Kategori Perawatan
-│   ├── fuel_record.dart               # Model Catatan Pengisian BBM
-│   └── service_reminder.dart          # Model Pengingat Jadwal Servis & Perhitungan Status
-├── providers/
-│   └── autolog_provider.dart          # State management (ChangeNotifier & Reaktif)
-├── services/
-│   ├── storage_service.dart           # Layanan penyimpanan lokal SharedPreferences
-│   └── mock_data.dart                 # Data awal / demo realistis
-├── theme/
-│   └── app_theme.dart                 # Material 3 tema otomotif (Light & Dark)
-├── utils/
-│   ├── currency_formatter.dart        # Format mata uang Rupiah (Rp)
-│   └── date_formatter.dart            # Format tanggal bahasa Indonesia
-├── widgets/
-│   ├── custom_card.dart               # Kartu kustom dengan efek elevasi & border
-│   ├── vehicle_selector_card.dart     # Kartu header kendaraan dengan tombol update KM
-│   ├── reminder_card.dart             # Kartu jadwal servis dengan progress bar
-│   ├── service_record_tile.dart       # Baris ringkasan servis
-│   ├── expense_chart.dart             # Grafik pengeluaran bulanan & kategori
-│   ├── stat_card.dart                 # Kartu ringkasan metrik statistik
-│   ├── empty_state.dart               # Tampilan saat data kosong
-│   └── update_odometer_dialog.dart    # Dialog cepat pembaruan KM odometer
-└── screens/
-    ├── main_navigation_screen.dart    # Navigasi utama (5 Tab + Tombol Tindakan Cepat)
-    ├── dashboard_screen.dart          # Beranda dengan ringkasan status & riwayat terkini
-    ├── service_history_screen.dart    # Riwayat servis lengkap dengan filter & pencarian
-    ├── service_detail_screen.dart     # Rincian nota/struk pengerjaan servis
-    ├── add_edit_service_screen.dart   # Formulir input/edit pemeliharaan kendaraan
-    ├── reminder_list_screen.dart      # Daftar pengingat & jadwal servis
-    ├── statistics_screen.dart         # Statistik & grafik pengeluaran
-    ├── fuel_history_screen.dart       # Riwayat pengisian BBM & efisiensi
-    ├── add_fuel_screen.dart           # Formulir pengisian BBM
-    ├── garage_screen.dart             # Manajemen garasi kendaraan & pengaturan data
-    └── add_edit_vehicle_screen.dart   # Formulir tambah/ubah data kendaraan
+AutoLog-App/
+├── database/
+│   └── schema.sql                   # Skrip DDL & DML MySQL (Laragon / HeidiSQL)
+├── api/                             # REST API PHP Native PDO (di C:\laragon\www\autolog\api\)
+│   ├── config/
+│   │   └── database.php             # Koneksi PDO (localhost, autolog_db, root, password kosong)
+│   ├── helpers/
+│   │   └── response.php             # Format respon JSON standar & header CORS
+│   ├── auth/
+│   │   ├── register.php             # POST: Registrasi pengguna baru (password_hash BCRYPT)
+│   │   └── login.php                # POST: Autentikasi pengguna (password_verify)
+│   ├── vehicles/
+│   │   └── index.php                # GET: Ambil daftar kendaraan | POST: Tambah kendaraan baru
+│   ├── service_types/
+│   │   └── index.php                # GET: Katalog jenis pemeliharaan / servis
+│   ├── service_logs/
+│   │   └── index.php                # GET: Riwayat servis | POST: Tambah log + upload foto nota
+│   ├── dashboard/
+│   │   ├── reminders.php            # GET: Kalkulasi status komponen (Hijau, Kuning, Merah)
+│   │   └── expenses.php             # GET: Rekapitulasi & statistik biaya perawatan
+│   └── uploads/
+│       └── .gitkeep                 # Folder penyimpanan berkas foto nota servis
+├── frontend/                        # Aplikasi Mobile Flutter (Dart)
+│   ├── lib/
+│   │   ├── main.dart                # Entry point & MultiProvider setup
+│   │   ├── core/
+│   │   │   ├── constants/           # ApiConstants (Konfigurasi URL Fleksibel)
+│   │   │   ├── theme/               # Material 3 Automotive Teal Theme
+│   │   │   └── utils/               # Formatter Rupiah & Tanggal Indonesia
+│   │   ├── models/                  # User, Vehicle, ServiceType, ServiceLog, ComponentReminder, ExpenseSummary
+│   │   ├── services/                # ApiService (HTTP client) & SessionService (SharedPreferences)
+│   │   ├── providers/               # AuthProvider, VehicleProvider, ServiceProvider
+│   │   ├── widgets/                 # CustomCard, ComponentStatusCard, VehicleHeaderCard, StatCard, EmptyState
+│   │   └── screens/
+│   │       ├── auth/                # LoginScreen & RegisterScreen
+│   │       ├── dashboard/           # DashboardScreen (Status Komponen Hijau, Kuning, Merah)
+│   │       ├── vehicles/            # AddEditVehicleScreen (Form Tambah Kendaraan)
+│   │       ├── service_logs/        # ServiceLogListScreen & AddServiceLogScreen (Image Picker Nota)
+│   │       ├── expenses/            # ExpenseSummaryScreen (Statistik & Tren Biaya)
+│   │       └── main_navigation_screen.dart # Navigasi 3 Tab Utama
+│   └── pubspec.yaml
+└── README.md
 ```
 
 ---
 
-## 🚀 Cara Menjalankan
+## 🗄️ 1. Database MySQL (`/database/schema.sql`)
 
-### Persyaratan:
-- [Flutter SDK](https://flutter.dev/docs/get-started/install) (versi 3.0.0 atau lebih baru)
-- Perangkat Android, iOS, Windows, atau Web Browser (Chrome/Edge)
+### Struktur Tabel & Relasi Relasional
+1. **`users`**: `id` (PK), `name`, `email` (UNIQUE), `password_hash`, `created_at`.
+2. **`vehicles`**: `id` (PK), `user_id` (FK -> users.id), `type` ('motor'/'mobil'), `brand_model`, `license_plate`, `current_odometer`, `created_at`.
+3. **`service_types`**: `id` (PK), `name`, `default_km_interval`, `default_month_interval`, `icon`, `created_at`.
+4. **`service_logs`**: `id` (PK), `vehicle_id` (FK -> vehicles.id), `service_type_id` (FK -> service_types.id), `service_date`, `odometer_km`, `cost`, `workshop_name`, `notes`, `receipt_photo_url`, `created_at`.
+5. **`reminders`**: `id` (PK), `vehicle_id` (FK -> vehicles.id), `service_type_id` (FK -> service_types.id), `due_km`, `due_date`, `status` ('pending'/'completed'), `created_at`.
 
-### Langkah-langkah:
-1. Clone repositori:
-   ```bash
-   git clone https://github.com/IanFris/AutoLog-App.git
-   cd AutoLog-App
-   ```
+### Cara Impor Database di Laragon:
+1. Buka aplikasi **Laragon**, lalu klik **Start All** (Apache & MySQL aktif).
+2. Klik tombol **Database** di Laragon untuk membuka **HeidiSQL** (atau akses phpMyAdmin di `http://localhost/phpmyadmin`).
+3. Buat database baru bernama `autolog_db` (atau langsung jalankan skrip `database/schema.sql` yang sudah memuat perintah `CREATE DATABASE IF NOT EXISTS autolog_db`).
+4. Eksekusi seluruh skrip `schema.sql`.
 
-2. Unduh dependensi:
-   ```bash
-   flutter pub get
-   ```
-
-3. Jalankan tes:
-   ```bash
-   flutter test
-   ```
-
-4. Jalankan aplikasi:
-   ```bash
-   # Di Chrome (Web)
-   flutter run -d chrome
-
-   # Di Windows Desktop
-   flutter run -d windows
-
-   # Di Perangkat / Emulator Android
-   flutter run -d android
-   ```
+### Akun Dummy Siap Pakai:
+| Email | Password | Nama | Kendaraan Sampel |
+|---|---|---|---|
+| `budi@autolog.com` | `password123` | Budi Santoso | Honda Vario 160 ABS (B 4589 SKM), Toyota Avanza 1.5 G (B 1842 KFL) |
+| `siti@autolog.com` | `password123` | Siti Rahmawati | Yamaha NMAX 155 Connected (D 3214 ABZ) |
 
 ---
 
-## 📄 Lisensi
+## 🌐 2. Backend REST API (`/api` di Laragon)
+
+API dibuat menggunakan **PHP Native dengan PDO** untuk mencegah celah keamanan *SQL Injection*.
+
+### Lokasi di Laragon:
+Salin atau arahkan folder `/api` ke direktori root web Laragon:
+```
+C:\laragon\www\autolog\api\
+```
+
+### Format Respon JSON Standar:
+```json
+{
+  "status": "success",
+  "message": "Pesan deskriptif status",
+  "data": { ... }
+}
+```
+
+### Daftar Endpoint REST API:
+| Metode | Endpoint | Parameter / Body | Deskripsi |
+|---|---|---|---|
+| **POST** | `/auth/register.php` | `name`, `email`, `password` | Pendaftaran akun pengguna baru |
+| **POST** | `/auth/login.php` | `email`, `password` | Autentikasi dan login pengguna |
+| **GET** | `/vehicles/index.php?user_id=1` | `user_id` | Mengambil seluruh kendaraan milik user |
+| **POST** | `/vehicles/index.php` | `user_id`, `type`, `brand_model`, `license_plate`, `current_odometer` | Menambah kendaraan baru |
+| **PUT** | `/vehicles/index.php` | `id`, `current_odometer` | Memperbarui kilometer odometer |
+| **GET** | `/service_types/index.php` | - | Katalog komponen dan jenis servis |
+| **GET** | `/service_logs/index.php?vehicle_id=1` | `vehicle_id` | Riwayat servis terurut dari yang terbaru |
+| **POST** | `/service_logs/index.php` | `vehicle_id`, `service_type_id`, `service_date`, `odometer_km`, `cost`, `workshop_name`, `notes`, `receipt_photo` (file) | Tambah servis, auto-update KM, auto-reset reminder, dan upload foto nota |
+| **GET** | `/dashboard/reminders.php?vehicle_id=1` | `vehicle_id` | Kalkulasi status komponen (Hijau, Kuning, Merah) |
+| **GET** | `/dashboard/expenses.php?vehicle_id=1` | `vehicle_id` | Total biaya, biaya per KM, kategori, dan tren bulanan |
+
+### Logika Kalkulasi Indikator Status Komponen:
+- 🔴 **Merah / Wajib Servis**: `KM saat ini >= Target KM` ATAU `Tanggal saat ini > Tanggal Jatuh Tempo`.
+- 🟡 **Kuning / Mendekati Servis**: Sisa jarak $\le 500\text{ KM}$ ATAU sisa waktu $\le 7\text{ hari}$.
+- 🟢 **Hijau / Aman**: Masih berada dalam batas interval pemakaian yang aman.
+
+---
+
+## 📱 3. Frontend Flutter (`/frontend`)
+
+Dibangun dengan arsitektur bersih dan modular menggunakan **Provider State Management**.
+
+### Fitur Aplikasi Mobile:
+1. **Login & Registrasi Pengguna**:
+   - Validasi form interaktif.
+   - Konfigurasi server URL fleksibel langsung dari aplikasi (dialog tombol setting di kanan atas).
+   - Penyimpanan sesi pengguna otomatis via `SharedPreferences`.
+2. **Dashboard / Garasi Saya**:
+   - Kartu kendaraan aktif dengan nomor plat dan odometer saat ini.
+   - Pemilih kendaraan instan (*dropdown switcher*).
+   - Dialog cepat **Update KM** odometer.
+   - Kartu indikator komponen berstatus warna **Hijau, Kuning, Merah** lengkap dengan *progress bar* dan sisa KM/hari.
+   - Tombol **"Servis Komponen Ini"** yang otomatis mengarahkan ke form servis dengan jenis komponen terisi.
+3. **Form Tambah Kendaraan**:
+   - Pilihan jenis kendaraan (Sepeda Motor / Mobil).
+   - Merk & model, nomor polisi, dan odometer awal.
+4. **Riwayat Pemeliharaan (Service Log List)**:
+   - Menampilkan catatan pengerjaan servis terurut dari yang terbaru.
+   - Fitur pencarian berdasarkan nama servis, bengkel, atau catatan.
+   - Indikator badge dan dialog *preview* foto nota servis yang tersimpan di server Laragon.
+5. **Form Tambah Log Servis**:
+   - Pilihan jenis servis dari katalog API.
+   - Input tanggal, KM servis, biaya dalam format Rupiah, nama bengkel, dan catatan mekanik.
+   - Fitur **Image Picker**: Mengambil foto nota servis langsung via kamera atau galeri untuk diunggah ke server via *multipart upload*.
+6. **Rekapitulasi Biaya Servis (Expense Summary)**:
+   - Total pengeluaran sepanjang masa, tahun ini, dan bulan ini.
+   - Estimasi biaya perawatan per kilometer (**Rp / KM**).
+   - Visualisasi tren pengeluaran 6 bulan terakhir.
+   - Diagram persentase biaya per kategori komponen.
+
+### Konfigurasi Base URL API:
+Base URL diatur di file `frontend/lib/core/constants/api_constants.dart`:
+- **Android Emulator**: `http://10.0.2.2/autolog/api` (default)
+- **Windows Desktop / Chrome Web**: `http://localhost/autolog/api`
+- **HP Fisik Android**: Gunakan IP Wi-Fi komputer Anda, misalnya `http://192.168.1.15/autolog/api`
+
+### Cara Menjalankan Flutter Frontend:
+```bash
+cd frontend
+
+# Unduh dependensi
+flutter pub get
+
+# Jalankan pengujian
+flutter test
+
+# Jalankan pada Google Chrome (Web)
+flutter run -d chrome
+
+# Jalankan pada Windows Desktop
+flutter run -d windows
+
+# Jalankan pada Emulator / HP Android
+flutter run -d android
+```
+
+---
+
+## 🛠️ Lisensi & Pengembang
+Dikembangkan untuk mempermudah pencatatan dan perawatan kendaraan bermotor.  
 Hak Cipta © 2026 AutoLog Team.
-Aplikasi ini dikembangkan untuk kemudahan perawatan kendaraan bermotor.
