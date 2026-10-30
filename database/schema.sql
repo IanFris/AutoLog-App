@@ -145,3 +145,4 @@ INSERT INTO `reminders` (`id`, `vehicle_id`, `service_type_id`, `due_km`, `due_d
 (4, 2, 10, 50000, DATE_ADD(CURDATE(), INTERVAL 150 DAY), 'pending', NOW()),
 -- NMAX: Oli mesin target 8000 KM (KM saat ini 8200 -> Terlewat 200 KM = MERAH / WAJIB SERVIS)
 (5, 3, 1, 8000, DATE_SUB(CURDATE(), INTERVAL 3 DAY), 'pending', NOW());
+

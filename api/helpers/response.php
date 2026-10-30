@@ -42,3 +42,4 @@ function getRequestData(): array {
     return $_POST;
 }
 ?>
+

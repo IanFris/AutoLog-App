@@ -269,3 +269,4 @@ class _AddEditVehicleScreenState extends State<AddEditVehicleScreen> {
     );
   }
 }
+

@@ -58,3 +58,4 @@ try {
     sendResponse("error", "Gagal melakukan registrasi: " . $e->getMessage(), null, 500);
 }
 ?>
+

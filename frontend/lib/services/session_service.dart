@@ -38,3 +38,4 @@ class SessionService {
     return prefs.getInt(_keyActiveVehicleId);
   }
 }
+

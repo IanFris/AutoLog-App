@@ -312,3 +312,4 @@ class VehicleHeaderCard extends StatelessWidget {
     );
   }
 }
+
