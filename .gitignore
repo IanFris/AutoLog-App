@@ -49,3 +49,4 @@ migrate_working_dir/
 # Backend uploads cache (keep .gitkeep)
 /api/uploads/*
 !/api/uploads/.gitkeep
+!/api/uploads/.htaccess

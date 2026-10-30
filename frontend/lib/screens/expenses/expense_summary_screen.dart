@@ -25,7 +25,8 @@ class ExpenseSummaryScreen extends StatelessWidget {
         body: const EmptyStateWidget(
           icon: Icons.bar_chart,
           title: 'Belum Ada Kendaraan',
-          subtitle: 'Pilih kendaraan untuk melihat statistik biaya pengeluaran pemeliharaan.',
+          subtitle:
+              'Pilih kendaraan untuk melihat statistik biaya pengeluaran pemeliharaan.',
         ),
       );
     }
@@ -55,13 +56,19 @@ class ExpenseSummaryScreen extends StatelessWidget {
                 context: context,
                 builder: (ctx) => AlertDialog(
                   title: const Text('Konfirmasi Logout'),
-                  content: const Text('Apakah Anda yakin ingin keluar dari akun?'),
+                  content:
+                      const Text('Apakah Anda yakin ingin keluar dari akun?'),
                   actions: [
-                    TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Batal')),
+                    TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        child: const Text('Batal')),
                     ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFEF4444)),
                       onPressed: () {
                         Navigator.of(ctx).pop();
+                        context.read<VehicleProvider>().reset();
+                        context.read<ServiceProvider>().reset();
                         auth.logout();
                       },
                       child: const Text('Logout'),
@@ -103,7 +110,8 @@ class ExpenseSummaryScreen extends StatelessWidget {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(6),
@@ -214,8 +222,11 @@ class ExpenseSummaryScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: trends.map((t) {
-                        final maxVal = trends.fold(0.0, (m, v) => v.totalCost > m ? v.totalCost : m);
-                        final heightFactor = maxVal > 0 ? (t.totalCost / maxVal).clamp(0.08, 1.0) : 0.08;
+                        final maxVal = trends.fold(
+                            0.0, (m, v) => v.totalCost > m ? v.totalCost : m);
+                        final heightFactor = maxVal > 0
+                            ? (t.totalCost / maxVal).clamp(0.08, 1.0)
+                            : 0.08;
                         return Expanded(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -224,7 +235,8 @@ class ExpenseSummaryScreen extends StatelessWidget {
                               children: [
                                 if (t.totalCost > 0)
                                   Text(
-                                    CurrencyFormatter.formatCompact(t.totalCost),
+                                    CurrencyFormatter.formatCompact(
+                                        t.totalCost),
                                     style: const TextStyle(
                                       fontSize: 9,
                                       fontWeight: FontWeight.w700,
@@ -244,7 +256,8 @@ class ExpenseSummaryScreen extends StatelessWidget {
                                 const SizedBox(height: 6),
                                 Text(
                                   t.monthLabel.split(' ').first,
-                                  style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
+                                  style: const TextStyle(
+                                      fontSize: 10, color: Color(0xFF94A3B8)),
                                 ),
                               ],
                             ),
@@ -276,7 +289,8 @@ class ExpenseSummaryScreen extends StatelessWidget {
                     child: Center(
                       child: Text(
                         'Belum ada data transaksi pengeluaran.',
-                        style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                        style:
+                            TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
                       ),
                     ),
                   )
@@ -292,7 +306,8 @@ class ExpenseSummaryScreen extends StatelessWidget {
                             children: [
                               Text(
                                 c.name,
-                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                                style: const TextStyle(
+                                    fontSize: 13, fontWeight: FontWeight.w600),
                               ),
                               Text(
                                 '${CurrencyFormatter.format(c.cost)} (${c.percentage.toStringAsFixed(0)}%)',
@@ -310,10 +325,12 @@ class ExpenseSummaryScreen extends StatelessWidget {
                             child: LinearProgressIndicator(
                               value: (c.percentage / 100).clamp(0.0, 1.0),
                               minHeight: 8,
-                              backgroundColor: Theme.of(context).brightness == Brightness.dark
+                              backgroundColor: Theme.of(context).brightness ==
+                                      Brightness.dark
                                   ? const Color(0xFF334155)
                                   : const Color(0xFFE2E8F0),
-                              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF0D9488)),
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                  Color(0xFF0D9488)),
                             ),
                           ),
                         ],
@@ -330,4 +347,3 @@ class ExpenseSummaryScreen extends StatelessWidget {
     );
   }
 }
-

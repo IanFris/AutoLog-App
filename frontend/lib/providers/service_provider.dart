@@ -14,6 +14,8 @@ class ServiceProvider extends ChangeNotifier {
 
   bool _isLoading = false;
   String? _errorMessage;
+  int _requestId = 0;
+  int? _vehicleId;
 
   List<ServiceType> get serviceTypes => _serviceTypes;
   List<ServiceLog> get serviceLogs => _serviceLogs;
@@ -31,11 +33,22 @@ class ServiceProvider extends ChangeNotifier {
   Future<void> fetchServiceTypes() async {
     try {
       _serviceTypes = await ApiService.getServiceTypes();
+      _errorMessage = null;
       notifyListeners();
-    } catch (_) {}
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
   }
 
   Future<void> fetchVehicleData(int vehicleId) async {
+    final requestId = ++_requestId;
+    if (_vehicleId != vehicleId) {
+      _vehicleId = vehicleId;
+      _serviceLogs = [];
+      _reminders = [];
+      _expenses = null;
+    }
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -45,12 +58,13 @@ class ServiceProvider extends ChangeNotifier {
         _serviceTypes = await ApiService.getServiceTypes();
       }
 
-      final results = await Future.wait([
+      final results = await Future.wait<Object>([
         ApiService.getServiceLogs(vehicleId),
         ApiService.getReminders(vehicleId),
         ApiService.getExpenses(vehicleId),
       ]);
 
+      if (requestId != _requestId) return;
       _serviceLogs = results[0] as List<ServiceLog>;
       _reminders = results[1] as List<ComponentReminder>;
       _expenses = results[2] as ExpenseSummary;
@@ -58,10 +72,22 @@ class ServiceProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     } catch (e) {
+      if (requestId != _requestId) return;
       _isLoading = false;
       _errorMessage = e.toString();
       notifyListeners();
     }
+  }
+
+  void reset() {
+    _requestId++;
+    _vehicleId = null;
+    _serviceLogs = [];
+    _reminders = [];
+    _expenses = null;
+    _isLoading = false;
+    _errorMessage = null;
+    notifyListeners();
   }
 
   Future<bool> addServiceLog({
@@ -74,12 +100,13 @@ class ServiceProvider extends ChangeNotifier {
     String? notes,
     XFile? receiptPhoto,
   }) async {
+    final requestId = _requestId;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      final newLog = await ApiService.createServiceLog(
+      await ApiService.createServiceLog(
         vehicleId: vehicleId,
         serviceTypeId: serviceTypeId,
         serviceDate: serviceDate,
@@ -90,18 +117,15 @@ class ServiceProvider extends ChangeNotifier {
         receiptPhoto: receiptPhoto,
       );
 
-      _serviceLogs.insert(0, newLog);
-
-      // Refresh reminders and expenses
-      await Future.wait([
-        ApiService.getReminders(vehicleId).then((r) => _reminders = r),
-        ApiService.getExpenses(vehicleId).then((e) => _expenses = e),
-      ]);
-
-      _isLoading = false;
-      notifyListeners();
+      if (_vehicleId == vehicleId) {
+        await fetchVehicleData(vehicleId);
+      } else if (requestId == _requestId) {
+        _isLoading = false;
+        notifyListeners();
+      }
       return true;
     } catch (e) {
+      if (requestId != _requestId) return false;
       _isLoading = false;
       _errorMessage = e.toString();
       notifyListeners();
@@ -109,4 +133,3 @@ class ServiceProvider extends ChangeNotifier {
     }
   }
 }
-

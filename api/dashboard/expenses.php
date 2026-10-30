@@ -1,17 +1,20 @@
 <?php
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../helpers/auth.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     sendResponse("error", "Metode tidak diizinkan. Gunakan GET.", null, 405);
 }
 
-$vehicleId = $_GET['vehicle_id'] ?? null;
+$vehicleId = filter_var($_GET['vehicle_id'] ?? null, FILTER_VALIDATE_INT);
 if (!$vehicleId) {
     sendResponse("error", "Parameter vehicle_id wajib disertakan.", null, 400);
 }
 
 $db = (new Database())->getConnection();
+$authenticatedUserId = requireAuthenticatedUser($db);
+requireVehicleOwnership($db, $authenticatedUserId, $vehicleId);
 
 try {
     // 1. Data kendaraan untuk menghitung biaya per KM
@@ -79,22 +82,33 @@ try {
         ];
     }
 
-    // 6. Tren pengeluaran 6 bulan terakhir
+    // Include the current month and the five preceding calendar months.
     $trendsStmt = $db->prepare(
         "SELECT DATE_FORMAT(service_date, '%Y-%m') AS month_key,
-                DATE_FORMAT(service_date, '%b %Y') AS month_label,
                 COALESCE(SUM(cost), 0) AS total_cost
          FROM service_logs
          WHERE vehicle_id = :vehicle_id
-           AND service_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 6 MONTH)
-         GROUP BY month_key, month_label
+           AND service_date >= DATE_FORMAT(DATE_SUB(CURRENT_DATE(), INTERVAL 5 MONTH), '%Y-%m-01')
+           AND service_date < DATE_ADD(LAST_DAY(CURRENT_DATE()), INTERVAL 1 DAY)
+         GROUP BY month_key
          ORDER BY month_key ASC"
     );
     $trendsStmt->execute([':vehicle_id' => $vehicleId]);
-    $monthlyTrends = $trendsStmt->fetchAll();
+    $trendsByMonth = [];
+    foreach ($trendsStmt->fetchAll() as $trend) {
+        $trendsByMonth[$trend['month_key']] = (float)$trend['total_cost'];
+    }
 
-    foreach ($monthlyTrends as &$trend) {
-        $trend['total_cost'] = (float)$trend['total_cost'];
+    $monthlyTrends = [];
+    $currentMonth = new DateTimeImmutable('first day of this month');
+    for ($offset = 5; $offset >= 0; $offset--) {
+        $month = $currentMonth->modify("-$offset months");
+        $monthKey = $month->format('Y-m');
+        $monthlyTrends[] = [
+            'month_key' => $monthKey,
+            'month_label' => $month->format('M Y'),
+            'total_cost' => $trendsByMonth[$monthKey] ?? 0.0,
+        ];
     }
 
     // Biaya perawatan per KM
@@ -110,7 +124,7 @@ try {
         "monthly_trends"     => $monthlyTrends
     ]);
 } catch (PDOException $e) {
-    sendResponse("error", "Gagal mengambil data pengeluaran: " . $e->getMessage(), null, 500);
+    error_log($e->getMessage());
+    sendResponse("error", "Gagal mengambil data pengeluaran.", null, 500);
 }
 ?>
-

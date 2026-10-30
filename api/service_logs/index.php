@@ -1,15 +1,22 @@
 <?php
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../helpers/auth.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 $db = (new Database())->getConnection();
 
 if ($method === 'GET') {
+    $authenticatedUserId = requireAuthenticatedUser($db);
     $vehicleId = $_GET['vehicle_id'] ?? null;
     if (!$vehicleId) {
         sendResponse("error", "Parameter vehicle_id wajib disertakan.", null, 400);
     }
+    $vehicleId = filter_var($vehicleId, FILTER_VALIDATE_INT);
+    if (!$vehicleId) {
+        sendResponse("error", "Parameter vehicle_id tidak valid.", null, 400);
+    }
+    requireVehicleOwnership($db, $authenticatedUserId, $vehicleId);
 
     try {
         $stmt = $db->prepare(
@@ -34,42 +41,78 @@ if ($method === 'GET') {
 
         sendResponse("success", "Riwayat servis berhasil diambil.", $logs);
     } catch (PDOException $e) {
-        sendResponse("error", "Gagal mengambil riwayat servis: " . $e->getMessage(), null, 500);
+        error_log($e->getMessage());
+        sendResponse("error", "Gagal mengambil riwayat servis.", null, 500);
     }
 } elseif ($method === 'POST') {
     $input = getRequestData();
-    $vehicleId = $input['vehicle_id'] ?? null;
-    $serviceTypeId = $input['service_type_id'] ?? null;
+    $authenticatedUserId = requireAuthenticatedUser($db);
+    $vehicleId = filter_var($input['vehicle_id'] ?? null, FILTER_VALIDATE_INT);
+    $serviceTypeId = filter_var($input['service_type_id'] ?? null, FILTER_VALIDATE_INT);
     $serviceDate = $input['service_date'] ?? date('Y-m-d');
-    $odometerKm = (int)($input['odometer_km'] ?? 0);
-    $cost = (float)($input['cost'] ?? 0.0);
-    $workshopName = trim($input['workshop_name'] ?? 'Bengkel Umum');
-    $notes = trim($input['notes'] ?? '');
+    $odometerKm = filter_var($input['odometer_km'] ?? null, FILTER_VALIDATE_INT);
+    $costInput = $input['cost'] ?? null;
+    $workshopInput = $input['workshop_name'] ?? 'Bengkel Umum';
+    $notesInput = $input['notes'] ?? '';
+    if (!is_string($workshopInput) || !is_string($notesInput)) {
+        sendResponse("error", "Nama bengkel dan catatan harus berupa teks.", null, 400);
+    }
+    $workshopName = trim($workshopInput);
+    $notes = trim($notesInput);
+    $parsedServiceDate = is_string($serviceDate)
+        ? DateTimeImmutable::createFromFormat('!Y-m-d', $serviceDate)
+        : false;
+    $dateErrors = DateTimeImmutable::getLastErrors();
 
-    if (!$vehicleId || !$serviceTypeId || empty($serviceDate) || $odometerKm <= 0) {
+    if (
+        !$vehicleId || $vehicleId <= 0 || !$serviceTypeId || $serviceTypeId <= 0 ||
+        $odometerKm === false || $odometerKm <= 0 || $odometerKm > 2147483647 ||
+        $parsedServiceDate === false || $parsedServiceDate->format('Y-m-d') !== $serviceDate ||
+        ($dateErrors !== false && ($dateErrors['warning_count'] > 0 || $dateErrors['error_count'] > 0)) ||
+        !is_numeric($costInput) || !is_finite((float)$costInput) ||
+        (float)$costInput < 0 || (float)$costInput > 9999999999.99
+    ) {
         sendResponse("error", "vehicle_id, service_type_id, service_date, dan odometer_km wajib diisi dengan benar.", null, 400);
     }
+    $cost = (float)$costInput;
+    requireVehicleOwnership($db, $authenticatedUserId, $vehicleId);
 
-    // Handle upload receipt photo jika ada
+    // The client only accepts images; PDFs and other non-image uploads are rejected.
     $receiptPhotoUrl = null;
-    if (isset($_FILES['receipt_photo']) && $_FILES['receipt_photo']['error'] === UPLOAD_ERR_OK) {
+    $uploadedFilePath = null;
+    if (isset($_FILES['receipt_photo']) && $_FILES['receipt_photo']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $upload = $_FILES['receipt_photo'];
+        if ($upload['error'] !== UPLOAD_ERR_OK) {
+            sendResponse("error", "Gagal menerima file nota.", null, 400);
+        }
+        if ($upload['size'] > 5 * 1024 * 1024) {
+            sendResponse("error", "Ukuran foto nota maksimal 5 MB.", null, 400);
+        }
+
+        $mimeType = (new finfo(FILEINFO_MIME_TYPE))->file($upload['tmp_name']);
+        $allowedMimeTypes = [
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+        ];
+        if (!isset($allowedMimeTypes[$mimeType])) {
+            sendResponse("error", "File nota harus berupa gambar JPG, PNG, atau WEBP.", null, 400);
+        }
+
         $uploadDir = __DIR__ . '/../uploads/';
         if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
-        }
-
-        $fileTmp = $_FILES['receipt_photo']['tmp_name'];
-        $fileName = $_FILES['receipt_photo']['name'];
-        $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-        $allowedExts = ['jpg', 'jpeg', 'png', 'webp', 'pdf'];
-
-        if (in_array($fileExt, $allowedExts)) {
-            $newFileName = 'receipt_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $fileExt;
-            $destination = $uploadDir . $newFileName;
-            if (move_uploaded_file($fileTmp, $destination)) {
-                $receiptPhotoUrl = 'uploads/' . $newFileName;
+            if (!mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) {
+                sendResponse("error", "Folder penyimpanan nota tidak dapat dibuat.", null, 500);
             }
         }
+
+        $newFileName = 'receipt_' . bin2hex(random_bytes(16)) . '.' . $allowedMimeTypes[$mimeType];
+        $uploadedFilePath = $uploadDir . $newFileName;
+        if (!move_uploaded_file($upload['tmp_name'], $uploadedFilePath)) {
+            $uploadedFilePath = null;
+            sendResponse("error", "Foto nota gagal disimpan.", null, 500);
+        }
+        $receiptPhotoUrl = 'uploads/' . $newFileName;
     }
 
     try {
@@ -110,9 +153,15 @@ if ($method === 'GET') {
             $monthInterval = (int)$typeInfo['default_month_interval'];
 
             $dueKm = $kmInterval > 0 ? ($odometerKm + $kmInterval) : null;
-            $dueDate = $monthInterval > 0 
-                ? date('Y-m-d', strtotime("+$monthInterval month", strtotime($serviceDate))) 
-                : null;
+            $dueDate = null;
+            if ($monthInterval > 0) {
+                $dueMonth = $parsedServiceDate->modify("first day of +$monthInterval months");
+                $dueDate = $dueMonth->setDate(
+                    (int)$dueMonth->format('Y'),
+                    (int)$dueMonth->format('n'),
+                    min((int)$parsedServiceDate->format('j'), (int)$dueMonth->format('t'))
+                )->format('Y-m-d');
+            }
 
             // Tandai reminder lama untuk komponen ini sebagai completed
             $markOld = $db->prepare(
@@ -149,11 +198,16 @@ if ($method === 'GET') {
             "receipt_photo_url" => $receiptPhotoUrl
         ], 201);
     } catch (PDOException $e) {
-        $db->rollBack();
-        sendResponse("error", "Gagal menyimpan log servis: " . $e->getMessage(), null, 500);
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        if ($uploadedFilePath !== null && is_file($uploadedFilePath)) {
+            unlink($uploadedFilePath);
+        }
+        error_log($e->getMessage());
+        sendResponse("error", "Gagal menyimpan log servis.", null, 500);
     }
 } else {
     sendResponse("error", "Metode tidak diizinkan.", null, 405);
 }
 ?>
-

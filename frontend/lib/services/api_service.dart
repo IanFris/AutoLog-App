@@ -8,6 +8,7 @@ import '../models/service_type.dart';
 import '../models/service_log.dart';
 import '../models/component_reminder.dart';
 import '../models/expense_summary.dart';
+import 'session_service.dart';
 
 class ApiException implements Exception {
   final String message;
@@ -20,6 +21,19 @@ class ApiException implements Exception {
 }
 
 class ApiService {
+  static Future<Map<String, String>> _authenticatedHeaders({
+    bool jsonContentType = false,
+  }) async {
+    final token = (await SessionService.getUser())?.token;
+    if (token == null || token.isEmpty) {
+      throw ApiException('Sesi login tidak valid. Silakan login kembali.', 401);
+    }
+    return {
+      if (jsonContentType) 'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+  }
+
   // Helper internal untuk menangani respon
   static Map<String, dynamic> _handleResponse(http.Response response) {
     try {
@@ -31,7 +45,8 @@ class ApiService {
         throw ApiException(data['message'] ?? 'Terjadi kesalahan sistem');
       } else {
         throw ApiException(
-          data['message'] ?? 'Gagal menghubungi server (HTTP ${response.statusCode})',
+          data['message'] ??
+              'Gagal menghubungi server (HTTP ${response.statusCode})',
           response.statusCode,
         );
       }
@@ -50,7 +65,10 @@ class ApiService {
       );
 
       final json = _handleResponse(res);
-      final userData = json['data']['user'] as Map<String, dynamic>;
+      final responseData = json['data'] as Map<String, dynamic>;
+      final userData = Map<String, dynamic>.from(
+        responseData['user'] as Map<String, dynamic>,
+      )..['token'] = responseData['token'];
       return User.fromJson(userData);
     } catch (e) {
       if (e is ApiException) rethrow;
@@ -58,7 +76,8 @@ class ApiService {
     }
   }
 
-  static Future<User> register(String name, String email, String password) async {
+  static Future<User> register(
+      String name, String email, String password) async {
     try {
       final res = await http.post(
         Uri.parse(ApiConstants.register),
@@ -67,7 +86,10 @@ class ApiService {
       );
 
       final json = _handleResponse(res);
-      final userData = json['data']['user'] as Map<String, dynamic>;
+      final responseData = json['data'] as Map<String, dynamic>;
+      final userData = Map<String, dynamic>.from(
+        responseData['user'] as Map<String, dynamic>,
+      )..['token'] = responseData['token'];
       return User.fromJson(userData);
     } catch (e) {
       if (e is ApiException) rethrow;
@@ -75,16 +97,27 @@ class ApiService {
     }
   }
 
+  static Future<void> logout(String token) async {
+    final res = await http.post(
+      Uri.parse(ApiConstants.logout),
+      headers: {'Authorization': 'Bearer $token'},
+    ).timeout(const Duration(seconds: 5));
+    _handleResponse(res);
+  }
+
   // --- 2. VEHICLES ---
   static Future<List<Vehicle>> getVehicles(int userId) async {
     try {
       final res = await http.get(
         Uri.parse('${ApiConstants.vehicles}?user_id=$userId'),
+        headers: await _authenticatedHeaders(),
       );
 
       final json = _handleResponse(res);
       final list = json['data'] as List<dynamic>;
-      return list.map((item) => Vehicle.fromJson(item as Map<String, dynamic>)).toList();
+      return list
+          .map((item) => Vehicle.fromJson(item as Map<String, dynamic>))
+          .toList();
     } catch (e) {
       if (e is ApiException) rethrow;
       throw ApiException('Gagal mengambil daftar kendaraan: $e');
@@ -101,7 +134,7 @@ class ApiService {
     try {
       final res = await http.post(
         Uri.parse(ApiConstants.vehicles),
-        headers: {'Content-Type': 'application/json'},
+        headers: await _authenticatedHeaders(jsonContentType: true),
         body: jsonEncode({
           'user_id': userId,
           'type': type,
@@ -123,7 +156,7 @@ class ApiService {
     try {
       final res = await http.put(
         Uri.parse(ApiConstants.vehicles),
-        headers: {'Content-Type': 'application/json'},
+        headers: await _authenticatedHeaders(jsonContentType: true),
         body: jsonEncode({
           'id': vehicleId,
           'current_odometer': newOdometer,
@@ -142,7 +175,9 @@ class ApiService {
       final res = await http.get(Uri.parse(ApiConstants.serviceTypes));
       final json = _handleResponse(res);
       final list = json['data'] as List<dynamic>;
-      return list.map((item) => ServiceType.fromJson(item as Map<String, dynamic>)).toList();
+      return list
+          .map((item) => ServiceType.fromJson(item as Map<String, dynamic>))
+          .toList();
     } catch (e) {
       if (e is ApiException) rethrow;
       throw ApiException('Gagal mengambil katalog jenis servis: $e');
@@ -154,10 +189,13 @@ class ApiService {
     try {
       final res = await http.get(
         Uri.parse('${ApiConstants.serviceLogs}?vehicle_id=$vehicleId'),
+        headers: await _authenticatedHeaders(),
       );
       final json = _handleResponse(res);
       final list = json['data'] as List<dynamic>;
-      return list.map((item) => ServiceLog.fromJson(item as Map<String, dynamic>)).toList();
+      return list
+          .map((item) => ServiceLog.fromJson(item as Map<String, dynamic>))
+          .toList();
     } catch (e) {
       if (e is ApiException) rethrow;
       throw ApiException('Gagal mengambil riwayat servis: $e');
@@ -177,6 +215,7 @@ class ApiService {
     try {
       final uri = Uri.parse(ApiConstants.serviceLogs);
       final request = http.MultipartRequest('POST', uri);
+      request.headers.addAll(await _authenticatedHeaders());
 
       request.fields['vehicle_id'] = vehicleId.toString();
       request.fields['service_type_id'] = serviceTypeId.toString();
@@ -211,11 +250,13 @@ class ApiService {
     try {
       final res = await http.get(
         Uri.parse('${ApiConstants.reminders}?vehicle_id=$vehicleId'),
+        headers: await _authenticatedHeaders(),
       );
       final json = _handleResponse(res);
       final list = json['data']['reminders'] as List<dynamic>;
       return list
-          .map((item) => ComponentReminder.fromJson(item as Map<String, dynamic>))
+          .map((item) =>
+              ComponentReminder.fromJson(item as Map<String, dynamic>))
           .toList();
     } catch (e) {
       if (e is ApiException) rethrow;
@@ -228,6 +269,7 @@ class ApiService {
     try {
       final res = await http.get(
         Uri.parse('${ApiConstants.expenses}?vehicle_id=$vehicleId'),
+        headers: await _authenticatedHeaders(),
       );
       final json = _handleResponse(res);
       return ExpenseSummary.fromJson(json['data'] as Map<String, dynamic>);
@@ -237,4 +279,3 @@ class ApiService {
     }
   }
 }
-

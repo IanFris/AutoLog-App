@@ -25,6 +25,7 @@ class ApiConstants {
   // Endpoints
   static String get login => '$baseUrl/auth/login.php';
   static String get register => '$baseUrl/auth/register.php';
+  static String get logout => '$baseUrl/auth/logout.php';
   static String get vehicles => '$baseUrl/vehicles/index.php';
   static String get serviceTypes => '$baseUrl/service_types/index.php';
   static String get serviceLogs => '$baseUrl/service_logs/index.php';
@@ -37,4 +38,3 @@ class ApiConstants {
     return '$parent/api/';
   }
 }
-

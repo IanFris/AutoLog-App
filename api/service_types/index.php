@@ -24,7 +24,7 @@ try {
 
     sendResponse("success", "Katalog jenis servis berhasil diambil.", $types);
 } catch (PDOException $e) {
-    sendResponse("error", "Gagal mengambil data jenis servis: " . $e->getMessage(), null, 500);
+    error_log($e->getMessage());
+    sendResponse("error", "Gagal mengambil data jenis servis.", null, 500);
 }
 ?>
-

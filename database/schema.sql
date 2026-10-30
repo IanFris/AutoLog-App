@@ -12,6 +12,7 @@ DROP TABLE IF EXISTS `reminders`;
 DROP TABLE IF EXISTS `service_logs`;
 DROP TABLE IF EXISTS `service_types`;
 DROP TABLE IF EXISTS `vehicles`;
+DROP TABLE IF EXISTS `user_sessions`;
 DROP TABLE IF EXISTS `users`;
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -24,6 +25,17 @@ CREATE TABLE `users` (
   `email` VARCHAR(150) NOT NULL UNIQUE,
   `password_hash` VARCHAR(255) NOT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `user_sessions` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `user_id` INT NOT NULL,
+  `token_hash` CHAR(64) NOT NULL UNIQUE,
+  `expires_at` DATETIME NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  KEY `idx_user_sessions_expiry` (`expires_at`),
+  CONSTRAINT `fk_user_sessions_user` FOREIGN KEY (`user_id`)
+    REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Admin accounts are created separately with `php admin/create_admin.php`.

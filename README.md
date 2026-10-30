@@ -14,15 +14,19 @@ Repository ini terbagi ke dalam **3 folder utama**:
 ```
 AutoLog-App/
 ├── database/
-│   └── schema.sql                   # Skrip DDL & DML MySQL (Laragon / HeidiSQL)
+│   ├── schema.sql                   # Skrip DDL & DML MySQL (Laragon / HeidiSQL)
+│   └── migrations/
+│       └── 001_user_sessions.sql    # Migrasi aman untuk instalasi database yang sudah ada
 ├── api/                             # REST API PHP Native PDO (di C:\laragon\www\autolog\api\)
 │   ├── config/
 │   │   └── database.php             # Koneksi PDO (localhost, autolog_db, root, password kosong)
 │   ├── helpers/
-│   │   └── response.php             # Format respon JSON standar & header CORS
+│   │   ├── response.php             # Format respon JSON standar & header CORS
+│   │   └── auth.php                 # Validasi token sesi API dan kepemilikan kendaraan
 │   ├── auth/
 │   │   ├── register.php             # POST: Registrasi pengguna baru (password_hash BCRYPT)
-│   │   └── login.php                # POST: Autentikasi pengguna (password_verify)
+│   │   ├── login.php                # POST: Autentikasi pengguna (password_verify)
+│   │   └── logout.php               # POST: Mencabut token sesi
 │   ├── vehicles/
 │   │   └── index.php                # GET: Ambil daftar kendaraan | POST: Tambah kendaraan baru
 │   ├── service_types/
@@ -33,6 +37,7 @@ AutoLog-App/
 │   │   ├── reminders.php            # GET: Kalkulasi status komponen (Hijau, Kuning, Merah)
 │   │   └── expenses.php             # GET: Rekapitulasi & statistik biaya perawatan
 │   └── uploads/
+│       ├── .htaccess                # Menonaktifkan indeks dan akses skrip
 │       └── .gitkeep                 # Folder penyimpanan berkas foto nota servis
 ├── frontend/                        # Aplikasi Mobile Flutter (Dart)
 │   ├── lib/
@@ -64,10 +69,11 @@ Dashboard admin berada di dalam folder `api/admin`, sehingga folder utama projec
 
 ### Struktur Tabel & Relasi Relasional
 1. **`users`**: `id` (PK), `name`, `email` (UNIQUE), `password_hash`, `created_at`.
-2. **`vehicles`**: `id` (PK), `user_id` (FK -> users.id), `type` ('motor'/'mobil'), `brand_model`, `license_plate`, `current_odometer`, `created_at`.
-3. **`service_types`**: `id` (PK), `name`, `default_km_interval`, `default_month_interval`, `icon`, `created_at`.
-4. **`service_logs`**: `id` (PK), `vehicle_id` (FK -> vehicles.id), `service_type_id` (FK -> service_types.id), `service_date`, `odometer_km`, `cost`, `workshop_name`, `notes`, `receipt_photo_url`, `created_at`.
-5. **`reminders`**: `id` (PK), `vehicle_id` (FK -> vehicles.id), `service_type_id` (FK -> service_types.id), `due_km`, `due_date`, `status` ('pending'/'completed'), `created_at`.
+2. **`user_sessions`**: hash token sesi, `user_id` (FK -> users.id), waktu kedaluwarsa.
+3. **`vehicles`**: `id` (PK), `user_id` (FK -> users.id), `type` ('motor'/'mobil'), `brand_model`, `license_plate`, `current_odometer`, `created_at`.
+4. **`service_types`**: `id` (PK), `name`, `default_km_interval`, `default_month_interval`, `icon`, `created_at`.
+5. **`service_logs`**: `id` (PK), `vehicle_id` (FK -> vehicles.id), `service_type_id` (FK -> service_types.id), `service_date`, `odometer_km`, `cost`, `workshop_name`, `notes`, `receipt_photo_url`, `created_at`.
+6. **`reminders`**: `id` (PK), `vehicle_id` (FK -> vehicles.id), `service_type_id` (FK -> service_types.id), `due_km`, `due_date`, `status` ('pending'/'completed'), `created_at`.
 
 ### Cara Impor Database di Laragon:
 1. Buka aplikasi **Laragon**, lalu klik **Start All** (Apache & MySQL aktif).
@@ -107,6 +113,8 @@ C:\laragon\www\autolog\api\
 ```
 
 API CORS headers and `OPTIONS` preflight responses are handled by `api/helpers/response.php`. Keep Apache-level CORS headers out of `.htaccess` to avoid duplicate headers that browsers reject.
+Endpoint yang membaca atau mengubah data pengguna memerlukan header `Authorization: Bearer <token>` dari login/registrasi. Token disimpan sebagai hash di database dan kedaluwarsa setelah 30 hari. Untuk database yang sudah ada, jalankan `database/migrations/001_user_sessions.sql` satu kali sebelum login kembali.
+Gunakan HTTPS saat API diakses melalui jaringan; URL HTTP bawaan hanya ditujukan untuk pengembangan lokal.
 
 ### Format Respon JSON Standar:
 ```json
@@ -120,16 +128,17 @@ API CORS headers and `OPTIONS` preflight responses are handled by `api/helpers/r
 ### Daftar Endpoint REST API:
 | Metode | Endpoint | Parameter / Body | Deskripsi |
 |---|---|---|---|
-| **POST** | `/auth/register.php` | `name`, `email`, `password` | Pendaftaran akun pengguna baru |
-| **POST** | `/auth/login.php` | `email`, `password` | Autentikasi dan login pengguna |
-| **GET** | `/vehicles/index.php?user_id=1` | `user_id` | Mengambil seluruh kendaraan milik user |
-| **POST** | `/vehicles/index.php` | `user_id`, `type`, `brand_model`, `license_plate`, `current_odometer` | Menambah kendaraan baru |
-| **PUT** | `/vehicles/index.php` | `id`, `current_odometer` | Memperbarui kilometer odometer |
+| **POST** | `/auth/register.php` | `name`, `email`, `password` | Registrasi akun dan penerbitan token sesi |
+| **POST** | `/auth/login.php` | `email`, `password` | Login dan penerbitan token sesi |
+| **POST** | `/auth/logout.php` | Header `Authorization: Bearer ...` | Mencabut token sesi |
+| **GET** | `/vehicles/index.php?user_id=1` | Token dan `user_id` | Mengambil seluruh kendaraan milik user yang terautentikasi |
+| **POST** | `/vehicles/index.php` | Token, `user_id`, `type`, `brand_model`, `license_plate`, `current_odometer` | Menambah kendaraan milik user yang terautentikasi |
+| **PUT** | `/vehicles/index.php` | Token, `id`, `current_odometer` | Memperbarui odometer kendaraan milik user yang terautentikasi |
 | **GET** | `/service_types/index.php` | - | Katalog komponen dan jenis servis |
-| **GET** | `/service_logs/index.php?vehicle_id=1` | `vehicle_id` | Riwayat servis terurut dari yang terbaru |
-| **POST** | `/service_logs/index.php` | `vehicle_id`, `service_type_id`, `service_date`, `odometer_km`, `cost`, `workshop_name`, `notes`, `receipt_photo` (file) | Tambah servis, auto-update KM, auto-reset reminder, dan upload foto nota |
-| **GET** | `/dashboard/reminders.php?vehicle_id=1` | `vehicle_id` | Kalkulasi status komponen (Hijau, Kuning, Merah) |
-| **GET** | `/dashboard/expenses.php?vehicle_id=1` | `vehicle_id` | Total biaya, biaya per KM, kategori, dan tren bulanan |
+| **GET** | `/service_logs/index.php?vehicle_id=1` | Token dan `vehicle_id` | Riwayat servis terurut dari yang terbaru |
+| **POST** | `/service_logs/index.php` | Token, `vehicle_id`, `service_type_id`, `service_date`, `odometer_km`, `cost`, `workshop_name`, `notes`, `receipt_photo` (JPG/PNG/WEBP, maks. 5 MB) | Tambah servis, auto-update KM, auto-reset reminder, dan upload foto nota |
+| **GET** | `/dashboard/reminders.php?vehicle_id=1` | Token dan `vehicle_id` | Kalkulasi status komponen (Hijau, Kuning, Merah) |
+| **GET** | `/dashboard/expenses.php?vehicle_id=1` | Token dan `vehicle_id` | Total biaya, biaya per KM, kategori, dan tren bulanan |
 
 ### Logika Kalkulasi Indikator Status Komponen:
 - 🔴 **Merah / Wajib Servis**: `KM saat ini >= Target KM` ATAU `Tanggal saat ini > Tanggal Jatuh Tempo`.

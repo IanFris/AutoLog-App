@@ -1,17 +1,20 @@
 <?php
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../helpers/auth.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     sendResponse("error", "Metode tidak diizinkan. Gunakan GET.", null, 405);
 }
 
-$vehicleId = $_GET['vehicle_id'] ?? null;
+$vehicleId = filter_var($_GET['vehicle_id'] ?? null, FILTER_VALIDATE_INT);
 if (!$vehicleId) {
     sendResponse("error", "Parameter vehicle_id wajib disertakan.", null, 400);
 }
 
 $db = (new Database())->getConnection();
+$authenticatedUserId = requireAuthenticatedUser($db);
+requireVehicleOwnership($db, $authenticatedUserId, $vehicleId);
 
 try {
     // 1. Ambil data kendaraan saat ini
@@ -24,7 +27,7 @@ try {
     }
 
     $currentOdo = (int)$vehicle['current_odometer'];
-    $today = new DateTime();
+    $today = new DateTimeImmutable('today');
 
     // 2. Ambil pengingat aktif (pending) beserta informasi jenis servis
     $stmt = $db->prepare(
@@ -62,7 +65,7 @@ try {
 
         // Kalkulasi berdasarkan Tanggal
         if ($dueDateStr !== null) {
-            $dueDate = new DateTime($dueDateStr);
+            $dueDate = new DateTimeImmutable($dueDateStr);
             $diff = $today->diff($dueDate);
             $days = (int)$diff->format("%r%a");
             $remainingDays = $days;
@@ -123,7 +126,7 @@ try {
         "reminders"        => $calculatedReminders
     ]);
 } catch (PDOException $e) {
-    sendResponse("error", "Gagal menghitung pengingat: " . $e->getMessage(), null, 500);
+    error_log($e->getMessage());
+    sendResponse("error", "Gagal menghitung pengingat.", null, 500);
 }
 ?>
-

@@ -1,15 +1,21 @@
 <?php
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../helpers/auth.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 $db = (new Database())->getConnection();
 
 if ($method === 'GET') {
-    $userId = $_GET['user_id'] ?? null;
-    if (!$userId) {
+    $authenticatedUserId = requireAuthenticatedUser($db);
+    $requestedUserId = filter_var($_GET['user_id'] ?? null, FILTER_VALIDATE_INT);
+    if (!$requestedUserId) {
         sendResponse("error", "Parameter user_id diperlukan.", null, 400);
     }
+    if ($requestedUserId !== $authenticatedUserId) {
+        sendResponse("error", "Akses ditolak.", null, 403);
+    }
+    $userId = $authenticatedUserId;
 
     try {
         $stmt = $db->prepare(
@@ -30,22 +36,35 @@ if ($method === 'GET') {
 
         sendResponse("success", "Data kendaraan berhasil diambil.", $vehicles);
     } catch (PDOException $e) {
-        sendResponse("error", "Gagal mengambil data kendaraan: " . $e->getMessage(), null, 500);
+        error_log($e->getMessage());
+        sendResponse("error", "Gagal mengambil data kendaraan.", null, 500);
     }
 } elseif ($method === 'POST') {
     $input = getRequestData();
-    $userId = $input['user_id'] ?? null;
-    $type = strtolower(trim($input['type'] ?? 'motor'));
-    $brandModel = trim($input['brand_model'] ?? '');
-    $licensePlate = strtoupper(trim($input['license_plate'] ?? ''));
-    $odometer = (int)($input['current_odometer'] ?? 0);
-
-    if (!$userId || empty($brandModel) || empty($licensePlate)) {
-        sendResponse("error", "user_id, brand_model, dan license_plate wajib diisi.", null, 400);
+    $userId = filter_var($input['user_id'] ?? null, FILTER_VALIDATE_INT);
+    $authenticatedUserId = requireAuthenticatedUser($db);
+    $typeInput = $input['type'] ?? 'motor';
+    $brandModelInput = $input['brand_model'] ?? '';
+    $licensePlateInput = $input['license_plate'] ?? '';
+    if (!is_string($typeInput) || !is_string($brandModelInput) || !is_string($licensePlateInput)) {
+        sendResponse("error", "Data kendaraan tidak valid.", null, 400);
     }
+    $type = strtolower(trim($typeInput));
+    $brandModel = trim($brandModelInput);
+    $licensePlate = strtoupper(trim($licensePlateInput));
+    $odometer = filter_var($input['current_odometer'] ?? 0, FILTER_VALIDATE_INT);
+
+    if (!$userId || $userId <= 0 || $brandModel === '' || $licensePlate === '' ||
+        $odometer === false || $odometer < 0 || $odometer > 2147483647) {
+        sendResponse("error", "Data kendaraan tidak valid.", null, 400);
+    }
+    if ($userId !== $authenticatedUserId) {
+        sendResponse("error", "Akses ditolak.", null, 403);
+    }
+    $userId = $authenticatedUserId;
 
     if (!in_array($type, ['motor', 'mobil'])) {
-        $type = 'motor';
+        sendResponse("error", "Tipe kendaraan tidak valid.", null, 400);
     }
 
     try {
@@ -72,29 +91,64 @@ if ($method === 'GET') {
             "current_odometer" => $odometer
         ], 201);
     } catch (PDOException $e) {
-        sendResponse("error", "Gagal menyimpan kendaraan: " . $e->getMessage(), null, 500);
+        error_log($e->getMessage());
+        sendResponse("error", "Gagal menyimpan kendaraan.", null, 500);
     }
 } elseif ($method === 'PUT') {
     // Update odometer atau info kendaraan
     $input = getRequestData();
-    $id = $input['id'] ?? null;
-    $odometer = $input['current_odometer'] ?? null;
+    $id = filter_var($input['id'] ?? null, FILTER_VALIDATE_INT);
+    $odometer = filter_var($input['current_odometer'] ?? null, FILTER_VALIDATE_INT);
+    $authenticatedUserId = requireAuthenticatedUser($db);
 
-    if (!$id) {
-        sendResponse("error", "ID kendaraan wajib disertakan.", null, 400);
+    if (!$id || $odometer === false || $odometer === null ||
+        $odometer < 0 || $odometer > 2147483647) {
+        sendResponse("error", "ID kendaraan dan odometer yang valid wajib disertakan.", null, 400);
     }
 
     try {
-        if ($odometer !== null) {
-            $stmt = $db->prepare("UPDATE vehicles SET current_odometer = :odometer WHERE id = :id");
-            $stmt->execute([':odometer' => (int)$odometer, ':id' => $id]);
+        $check = $db->prepare(
+            "SELECT current_odometer FROM vehicles WHERE id = :id AND user_id = :user_id LIMIT 1"
+        );
+        $check->execute([':id' => $id, ':user_id' => $authenticatedUserId]);
+        $currentOdometer = $check->fetchColumn();
+        if ($currentOdometer === false) {
+            sendResponse("error", "Kendaraan tidak ditemukan.", null, 404);
+        }
+
+        if ($odometer < (int)$currentOdometer) {
+            sendResponse("error", "Odometer tidak boleh lebih kecil dari data saat ini.", null, 400);
+        }
+
+        $stmt = $db->prepare(
+            "UPDATE vehicles
+             SET current_odometer = :odometer
+             WHERE id = :id AND user_id = :user_id AND current_odometer <= :odometer"
+        );
+        $stmt->execute([
+            ':odometer' => $odometer,
+            ':id' => $id,
+            ':user_id' => $authenticatedUserId,
+        ]);
+        if ($stmt->rowCount() === 0) {
+            $currentStmt = $db->prepare(
+                "SELECT current_odometer FROM vehicles WHERE id = :id AND user_id = :user_id LIMIT 1"
+            );
+            $currentStmt->execute([':id' => $id, ':user_id' => $authenticatedUserId]);
+            $currentOdometer = $currentStmt->fetchColumn();
+            if ($currentOdometer === false) {
+                sendResponse("error", "Kendaraan tidak ditemukan.", null, 404);
+            }
+            if ((int)$currentOdometer > $odometer) {
+                sendResponse("error", "Odometer berubah. Muat ulang data sebelum mencoba kembali.", null, 409);
+            }
         }
         sendResponse("success", "Data kendaraan berhasil diperbarui.");
     } catch (PDOException $e) {
-        sendResponse("error", "Gagal memperbarui kendaraan: " . $e->getMessage(), null, 500);
+        error_log($e->getMessage());
+        sendResponse("error", "Gagal memperbarui kendaraan.", null, 500);
     }
 } else {
     sendResponse("error", "Metode tidak diizinkan.", null, 405);
 }
 ?>
-

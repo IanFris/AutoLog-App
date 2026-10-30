@@ -123,7 +123,8 @@ class _AddServiceLogScreenState extends State<AddServiceLogScreen> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library, color: Color(0xFF3B82F6)),
+                leading:
+                    const Icon(Icons.photo_library, color: Color(0xFF3B82F6)),
                 title: const Text('Pilih dari Galeri'),
                 onTap: () {
                   Navigator.of(ctx).pop();
@@ -149,11 +150,10 @@ class _AddServiceLogScreenState extends State<AddServiceLogScreen> {
     }
 
     final sp = context.read<ServiceProvider>();
-    final odo = int.tryParse(
-            _odometerController.text.replaceAll('.', '').trim()) ??
-        widget.vehicle!.currentOdometer;
-    final cost =
-        double.tryParse(_costController.text.replaceAll('.', '').trim()) ?? 0.0;
+    final odo =
+        int.tryParse(_odometerController.text.replaceAll('.', '').trim()) ??
+            widget.vehicle!.currentOdometer;
+    final cost = double.parse(_costController.text.replaceAll('.', '').trim());
     final dateStr =
         "${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}";
 
@@ -171,7 +171,8 @@ class _AddServiceLogScreenState extends State<AddServiceLogScreen> {
     if (success && mounted) {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Catatan servis berhasil disimpan ke server!')),
+        const SnackBar(
+            content: Text('Catatan servis berhasil disimpan ke server!')),
       );
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -227,7 +228,8 @@ class _AddServiceLogScreenState extends State<AddServiceLogScreen> {
                 ),
                 child: Row(
                   children: [
-                    Icon(widget.vehicle!.type.icon, color: const Color(0xFF0D9488)),
+                    Icon(widget.vehicle!.type.icon,
+                        color: const Color(0xFF0D9488)),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
@@ -235,11 +237,13 @@ class _AddServiceLogScreenState extends State<AddServiceLogScreen> {
                         children: [
                           Text(
                             widget.vehicle!.brandModel,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 13),
                           ),
                           Text(
                             '${widget.vehicle!.licensePlate} • KM Saat Ini: ${widget.vehicle!.currentOdometer} KM',
-                            style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                            style: const TextStyle(
+                                fontSize: 11, color: Color(0xFF64748B)),
                           ),
                         ],
                       ),
@@ -249,6 +253,24 @@ class _AddServiceLogScreenState extends State<AddServiceLogScreen> {
               ),
 
             const SizedBox(height: 20),
+
+            if (types.isEmpty && sp.errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Gagal memuat katalog servis: ${sp.errorMessage}',
+                      style: const TextStyle(color: Color(0xFFDC2626)),
+                    ),
+                    TextButton(
+                      onPressed: sp.fetchServiceTypes,
+                      child: const Text('Coba lagi'),
+                    ),
+                  ],
+                ),
+              ),
 
             // Dropdown Jenis Servis
             DropdownButtonFormField<int>(
@@ -307,7 +329,7 @@ class _AddServiceLogScreenState extends State<AddServiceLogScreen> {
                     ),
                     validator: (val) {
                       final k = int.tryParse(val?.replaceAll('.', '') ?? '');
-                      if (k == null || k < 0) return 'KM tidak valid';
+                      if (k == null || k <= 0) return 'KM harus lebih dari 0';
                       return null;
                     },
                   ),
@@ -328,7 +350,16 @@ class _AddServiceLogScreenState extends State<AddServiceLogScreen> {
                 prefixIcon: Icon(Icons.payments_outlined),
               ),
               validator: (val) {
-                if (val == null || val.trim().isEmpty) return 'Biaya wajib diisi';
+                if (val == null || val.trim().isEmpty) {
+                  return 'Biaya wajib diisi';
+                }
+                final amount = double.tryParse(val.replaceAll('.', '').trim());
+                if (amount == null ||
+                    !amount.isFinite ||
+                    amount < 0 ||
+                    amount > 9999999999.99) {
+                  return 'Masukkan biaya yang valid';
+                }
                 return null;
               },
             ),
@@ -343,8 +374,9 @@ class _AddServiceLogScreenState extends State<AddServiceLogScreen> {
                 hintText: 'AHASS, Planet Ban, dll',
                 prefixIcon: Icon(Icons.storefront_outlined),
               ),
-              validator: (val) =>
-                  val == null || val.trim().isEmpty ? 'Nama bengkel wajib diisi' : null,
+              validator: (val) => val == null || val.trim().isEmpty
+                  ? 'Nama bengkel wajib diisi'
+                  : null,
             ),
 
             const SizedBox(height: 8),
@@ -417,13 +449,15 @@ class _AddServiceLogScreenState extends State<AddServiceLogScreen> {
                         children: [
                           Text(
                             _receiptPhoto!.name,
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.bold),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           const Text(
                             'Foto siap diunggah ke Laragon',
-                            style: TextStyle(fontSize: 11, color: Color(0xFF10B981)),
+                            style: TextStyle(
+                                fontSize: 11, color: Color(0xFF10B981)),
                           ),
                         ],
                       ),
@@ -453,9 +487,11 @@ class _AddServiceLogScreenState extends State<AddServiceLogScreen> {
                   ? const SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2),
                     )
-                  : const Text('Simpan Catatan Servis', style: TextStyle(fontSize: 16)),
+                  : const Text('Simpan Catatan Servis',
+                      style: TextStyle(fontSize: 16)),
             ),
           ],
         ),
@@ -463,4 +499,3 @@ class _AddServiceLogScreenState extends State<AddServiceLogScreen> {
     );
   }
 }
-

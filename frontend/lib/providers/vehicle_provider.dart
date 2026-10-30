@@ -8,6 +8,8 @@ class VehicleProvider extends ChangeNotifier {
   Vehicle? _activeVehicle;
   bool _isLoading = false;
   String? _errorMessage;
+  int _requestId = 0;
+  int? _userId;
 
   List<Vehicle> get vehicles => _vehicles;
   Vehicle? get activeVehicle => _activeVehicle;
@@ -15,20 +17,32 @@ class VehicleProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   Future<void> fetchVehicles(int userId) async {
+    final requestId = ++_requestId;
+    if (_userId != userId) {
+      _userId = userId;
+      _vehicles = [];
+      _activeVehicle = null;
+    }
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      _vehicles = await ApiService.getVehicles(userId);
+      final vehicles = await ApiService.getVehicles(userId);
+      if (requestId != _requestId) return;
+
+      _vehicles = vehicles;
       final savedActiveId = await SessionService.getActiveVehicleId();
+      if (requestId != _requestId) return;
 
       if (_vehicles.isNotEmpty) {
-        if (savedActiveId != null && _vehicles.any((v) => v.id == savedActiveId)) {
+        if (savedActiveId != null &&
+            _vehicles.any((v) => v.id == savedActiveId)) {
           _activeVehicle = _vehicles.firstWhere((v) => v.id == savedActiveId);
         } else {
           _activeVehicle = _vehicles.first;
           await SessionService.saveActiveVehicleId(_activeVehicle!.id);
+          if (requestId != _requestId) return;
         }
       } else {
         _activeVehicle = null;
@@ -37,10 +51,21 @@ class VehicleProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     } catch (e) {
+      if (requestId != _requestId) return;
       _isLoading = false;
       _errorMessage = e.toString();
       notifyListeners();
     }
+  }
+
+  void reset() {
+    _requestId++;
+    _userId = null;
+    _vehicles = [];
+    _activeVehicle = null;
+    _isLoading = false;
+    _errorMessage = null;
+    notifyListeners();
   }
 
   void setActiveVehicle(Vehicle vehicle) {
@@ -56,7 +81,11 @@ class VehicleProvider extends ChangeNotifier {
     required String licensePlate,
     required int currentOdometer,
   }) async {
+    _userId ??= userId;
+    if (_userId != userId) return false;
+    var requestId = _requestId;
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
 
     try {
@@ -68,14 +97,18 @@ class VehicleProvider extends ChangeNotifier {
         currentOdometer: currentOdometer,
       );
 
+      if (_userId != userId) return true;
+      requestId = ++_requestId;
       _vehicles.insert(0, newVehicle);
       _activeVehicle = newVehicle;
       await SessionService.saveActiveVehicleId(newVehicle.id);
 
+      if (requestId != _requestId) return true;
       _isLoading = false;
       notifyListeners();
       return true;
     } catch (e) {
+      if (requestId != _requestId) return false;
       _isLoading = false;
       _errorMessage = e.toString();
       notifyListeners();
@@ -85,11 +118,17 @@ class VehicleProvider extends ChangeNotifier {
 
   Future<bool> updateOdometer(int newOdometer) async {
     if (_activeVehicle == null) return false;
+    final vehicle = _activeVehicle!;
+    final requestId = _requestId;
+    _errorMessage = null;
 
     try {
-      await ApiService.updateOdometer(_activeVehicle!.id, newOdometer);
-      final updated = _activeVehicle!.copyWith(currentOdometer: newOdometer);
-      _activeVehicle = updated;
+      await ApiService.updateOdometer(vehicle.id, newOdometer);
+      if (requestId != _requestId) return true;
+      final updated = vehicle.copyWith(currentOdometer: newOdometer);
+      if (_activeVehicle?.id == vehicle.id) {
+        _activeVehicle = updated;
+      }
 
       final index = _vehicles.indexWhere((v) => v.id == updated.id);
       if (index != -1) {
@@ -99,10 +138,10 @@ class VehicleProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
+      if (requestId != _requestId) return false;
       _errorMessage = e.toString();
       notifyListeners();
       return false;
     }
   }
 }
-

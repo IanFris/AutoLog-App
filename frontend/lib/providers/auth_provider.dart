@@ -18,7 +18,13 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> _loadSession() async {
-    _currentUser = await SessionService.getUser();
+    final user = await SessionService.getUser();
+    if (user == null || user.token == null || user.token!.isEmpty) {
+      await SessionService.clearUser();
+      _currentUser = null;
+    } else {
+      _currentUser = user;
+    }
     notifyListeners();
   }
 
@@ -63,9 +69,21 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
-    await SessionService.clearUser();
+    final token = _currentUser?.token;
     _currentUser = null;
+    await SessionService.clearUser();
     notifyListeners();
+
+    if (token == null || token.isEmpty) return;
+
+    try {
+      await ApiService.logout(token);
+      _errorMessage = null;
+    } catch (e) {
+      _errorMessage =
+          'Sesi lokal sudah dihapus, tetapi server belum mengonfirmasi logout.';
+      notifyListeners();
+    }
   }
 
   void clearError() {
@@ -73,4 +91,3 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 }
-
