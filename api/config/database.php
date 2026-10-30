@@ -22,7 +22,6 @@ class Database {
             ];
             $this->conn = new PDO($dsn, $this->username, $this->password, $options);
         } catch (PDOException $exception) {
-            header("Access-Control-Allow-Origin: *");
             header("Content-Type: application/json; charset=UTF-8");
             http_response_code(500);
             echo json_encode([

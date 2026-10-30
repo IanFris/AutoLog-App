@@ -91,6 +91,8 @@ Salin atau arahkan folder `/api` ke direktori root web Laragon:
 C:\laragon\www\autolog\api\
 ```
 
+API CORS headers and `OPTIONS` preflight responses are handled by `api/helpers/response.php`. Keep Apache-level CORS headers out of `.htaccess` to avoid duplicate headers that browsers reject.
+
 ### Format Respon JSON Standar:
 ```json
 {
