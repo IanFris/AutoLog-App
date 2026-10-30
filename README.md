@@ -34,10 +34,6 @@ AutoLog-App/
 │   │   └── expenses.php             # GET: Rekapitulasi & statistik biaya perawatan
 │   └── uploads/
 │       └── .gitkeep                 # Folder penyimpanan berkas foto nota servis
-├── admin/                           # Dashboard admin berbasis PHP
-│   ├── create_admin.php             # CLI untuk membuat atau mengganti akun admin
-│   ├── login.php                    # Login admin terpisah dari akun pengguna AutoLog
-│   └── index.php                    # Ringkasan, pengguna, kendaraan, servis, dan katalog
 ├── frontend/                        # Aplikasi Mobile Flutter (Dart)
 │   ├── lib/
 │   │   ├── main.dart                # Entry point & MultiProvider setup
@@ -60,6 +56,8 @@ AutoLog-App/
 └── README.md
 ```
 
+Dashboard admin berada di dalam folder `api/admin`, sehingga folder utama project tetap hanya `api`, `frontend`, dan `database`.
+
 ---
 
 ## 🗄️ 1. Database MySQL (`/database/schema.sql`)
@@ -79,11 +77,11 @@ AutoLog-App/
 
 ### Dashboard Admin
 
-Panel admin tersedia melalui `http://localhost/autolog/admin/`. Salin folder `admin` bersama folder `api` ke `C:\laragon\www\autolog\` terlebih dahulu, lalu buat akun admin dari PowerShell atau terminal:
+Panel admin tersedia melalui `http://localhost/autolog/api/admin/`. Salin folder `api` ke `C:\laragon\www\autolog\`, lalu buat akun admin dari PowerShell atau terminal:
 
 ```powershell
 cd C:\laragon\www\autolog
-php admin\create_admin.php
+php api\admin\create_admin.php
 ```
 
 Masukkan email dan password admin saat diminta. Password minimal 12 karakter. Akun admin disimpan terpisah di tabel `admin_users`; akun demo aplikasi biasa tidak bisa dipakai untuk login admin.

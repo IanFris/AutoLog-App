@@ -76,8 +76,8 @@ try {
         $delete->execute([':id' => $id]);
 
         if ($delete->rowCount() && is_string($photo) && preg_match('#^uploads/[A-Za-z0-9._-]+$#', $photo)) {
-            $photoPath = realpath(__DIR__ . '/../api/' . $photo);
-            $uploadPath = realpath(__DIR__ . '/../api/uploads');
+            $photoPath = realpath(__DIR__ . '/../' . $photo);
+            $uploadPath = realpath(__DIR__ . '/../uploads');
             if ($photoPath !== false && $uploadPath !== false && str_starts_with($photoPath, $uploadPath . DIRECTORY_SEPARATOR) && is_file($photoPath)) {
                 if (!unlink($photoPath)) {
                     error_log('AutoLog admin could not remove receipt file: ' . $photoPath);

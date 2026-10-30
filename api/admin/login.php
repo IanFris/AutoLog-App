@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Email atau password admin salah.';
         } catch (PDOException $exception) {
             error_log('AutoLog admin login: ' . $exception->getMessage());
-            $error = 'Tabel admin belum siap. Jalankan `php admin/create_admin.php` dari folder aplikasi.';
+            $error = 'Tabel admin belum siap. Jalankan `php api/admin/create_admin.php` dari folder aplikasi.';
         }
     }
 }

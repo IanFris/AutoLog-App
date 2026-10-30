@@ -6,7 +6,7 @@ if (PHP_SAPI !== 'cli') {
     exit;
 }
 
-require_once __DIR__ . '/../api/config/database.php';
+require_once __DIR__ . '/../config/database.php';
 
 function read_value(string $prompt): string
 {
@@ -47,7 +47,7 @@ try {
         ':password_hash' => password_hash($password, PASSWORD_DEFAULT),
     ]);
 
-    fwrite(STDOUT, "Akun admin berhasil disimpan. Buka /autolog/admin/ untuk login.\n");
+    fwrite(STDOUT, "Akun admin berhasil disimpan. Buka /autolog/api/admin/ untuk login.\n");
 } catch (PDOException $exception) {
     fwrite(STDERR, "Gagal menyiapkan akun admin: " . $exception->getMessage() . "\n");
     exit(1);

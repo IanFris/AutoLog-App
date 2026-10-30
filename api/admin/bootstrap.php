@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/../api/config/database.php';
+require_once __DIR__ . '/../config/database.php';
 
 function admin_start_session(): void
 {
@@ -13,7 +13,7 @@ function admin_start_session(): void
     session_name('autolog_admin');
     session_set_cookie_params([
         'lifetime' => 0,
-        'path' => '/autolog/admin',
+        'path' => '/autolog/api/admin',
         'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
         'httponly' => true,
         'samesite' => 'Strict',
