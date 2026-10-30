@@ -26,6 +26,14 @@ CREATE TABLE `users` (
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Admin accounts are created separately with `php admin/create_admin.php`.
+CREATE TABLE IF NOT EXISTS `admin_users` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `email` VARCHAR(150) NOT NULL UNIQUE,
+  `password_hash` VARCHAR(255) NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- --------------------------------------------------------------------
 -- 2. TABEL: vehicles
 -- --------------------------------------------------------------------
@@ -145,4 +153,3 @@ INSERT INTO `reminders` (`id`, `vehicle_id`, `service_type_id`, `due_km`, `due_d
 (4, 2, 10, 50000, DATE_ADD(CURDATE(), INTERVAL 150 DAY), 'pending', NOW()),
 -- NMAX: Oli mesin target 8000 KM (KM saat ini 8200 -> Terlewat 200 KM = MERAH / WAJIB SERVIS)
 (5, 3, 1, 8000, DATE_SUB(CURDATE(), INTERVAL 3 DAY), 'pending', NOW());
-

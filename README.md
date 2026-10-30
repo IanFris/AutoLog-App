@@ -34,6 +34,10 @@ AutoLog-App/
 │   │   └── expenses.php             # GET: Rekapitulasi & statistik biaya perawatan
 │   └── uploads/
 │       └── .gitkeep                 # Folder penyimpanan berkas foto nota servis
+├── admin/                           # Dashboard admin berbasis PHP
+│   ├── create_admin.php             # CLI untuk membuat atau mengganti akun admin
+│   ├── login.php                    # Login admin terpisah dari akun pengguna AutoLog
+│   └── index.php                    # Ringkasan, pengguna, kendaraan, servis, dan katalog
 ├── frontend/                        # Aplikasi Mobile Flutter (Dart)
 │   ├── lib/
 │   │   ├── main.dart                # Entry point & MultiProvider setup
@@ -72,6 +76,19 @@ AutoLog-App/
 2. Klik tombol **Database** di Laragon untuk membuka **HeidiSQL** (atau akses phpMyAdmin di `http://localhost/phpmyadmin`).
 3. Buat database baru bernama `autolog_db` (atau langsung jalankan skrip `database/schema.sql` yang sudah memuat perintah `CREATE DATABASE IF NOT EXISTS autolog_db`).
 4. Eksekusi seluruh skrip `schema.sql`.
+
+### Dashboard Admin
+
+Panel admin tersedia melalui `http://localhost/autolog/admin/`. Salin folder `admin` bersama folder `api` ke `C:\laragon\www\autolog\` terlebih dahulu, lalu buat akun admin dari PowerShell atau terminal:
+
+```powershell
+cd C:\laragon\www\autolog
+php admin\create_admin.php
+```
+
+Masukkan email dan password admin saat diminta. Password minimal 12 karakter. Akun admin disimpan terpisah di tabel `admin_users`; akun demo aplikasi biasa tidak bisa dipakai untuk login admin.
+
+Dashboard memuat ringkasan statistik dan biaya servis, pencarian serta pengelolaan pengguna/kendaraan, riwayat servis, serta tambah/edit/hapus katalog servis. Penghapusan pengguna atau kendaraan juga menghapus data terkait melalui relasi database. Jenis servis yang sudah dipakai pada riwayat atau pengingat tidak dapat dihapus. Gunakan panel ini hanya di lingkungan yang memiliki HTTPS saat diakses melalui jaringan.
 
 ### Akun Dummy Siap Pakai:
 | Email | Password | Nama | Kendaraan Sampel |
