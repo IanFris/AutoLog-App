@@ -1,11 +1,18 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../core/constants/api_constants.dart';
 import '../../models/service_log.dart';
+import '../../models/vehicle.dart';
 import '../../providers/vehicle_provider.dart';
 import '../../providers/service_provider.dart';
 import '../../utils/currency_formatter.dart';
 import '../../utils/date_formatter.dart';
+import '../../utils/service_log_csv_exporter.dart';
 import '../../widgets/custom_card.dart';
 import '../../widgets/empty_state.dart';
 import 'add_service_log_screen.dart';
@@ -19,6 +26,7 @@ class ServiceLogListScreen extends StatefulWidget {
 
 class _ServiceLogListScreenState extends State<ServiceLogListScreen> {
   final TextEditingController _searchController = TextEditingController();
+  bool _isExporting = false;
 
   @override
   void dispose() {
@@ -77,6 +85,47 @@ class _ServiceLogListScreenState extends State<ServiceLogListScreen> {
     );
   }
 
+  Future<void> _exportServiceLogs(
+      Vehicle vehicle, List<ServiceLog> logs) async {
+    setState(() => _isExporting = true);
+    try {
+      final date = DateFormat('yyyyMMdd').format(DateTime.now());
+      final safePlate = vehicle.licensePlate.replaceAll(
+        RegExp(r'[^A-Za-z0-9_-]'),
+        '_',
+      );
+      final fileName = 'autolog_riwayat_${safePlate}_$date.csv';
+      final csv = ServiceLogCsvExporter.createCsv(logs);
+      final result = await SharePlus.instance.share(
+        ShareParams(
+          files: [
+            XFile.fromData(
+              Uint8List.fromList(utf8.encode(csv)),
+              mimeType: 'text/csv',
+              name: fileName,
+            ),
+          ],
+          fileNameOverrides: [fileName],
+          title: 'Riwayat Servis ${vehicle.brandModel}',
+          downloadFallbackEnabled: true,
+        ),
+      );
+      if (mounted && result.status == ShareResultStatus.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Riwayat servis berhasil dibagikan.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal mengekspor riwayat servis: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final vp = context.watch<VehicleProvider>();
@@ -90,7 +139,9 @@ class _ServiceLogListScreenState extends State<ServiceLogListScreen> {
       final name = (l.serviceTypeName ?? '').toLowerCase();
       final workshop = l.workshopName.toLowerCase();
       final notes = (l.notes ?? '').toLowerCase();
-      return name.contains(query) || workshop.contains(query) || notes.contains(query);
+      return name.contains(query) ||
+          workshop.contains(query) ||
+          notes.contains(query);
     }).toList();
 
     final totalCost = filtered.fold(0.0, (sum, item) => sum + item.cost);
@@ -99,6 +150,19 @@ class _ServiceLogListScreenState extends State<ServiceLogListScreen> {
       appBar: AppBar(
         title: const Text('Riwayat Pemeliharaan'),
         actions: [
+          IconButton(
+            icon: _isExporting
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.file_download_outlined),
+            tooltip: 'Ekspor riwayat ke CSV',
+            onPressed: vehicle == null || logs.isEmpty || _isExporting
+                ? null
+                : () => _exportServiceLogs(vehicle, logs),
+          ),
           IconButton(
             icon: const Icon(Icons.add),
             tooltip: 'Tambah Servis',
@@ -135,7 +199,8 @@ class _ServiceLogListScreenState extends State<ServiceLogListScreen> {
                         },
                       )
                     : null,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               ),
             ),
           ),
@@ -152,11 +217,17 @@ class _ServiceLogListScreenState extends State<ServiceLogListScreen> {
                 children: [
                   Text(
                     '${filtered.length} Catatan Servis',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+                    style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF64748B)),
                   ),
                   Text(
                     'Total: ${CurrencyFormatter.format(totalCost)}',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF0D9488)),
+                    style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF0D9488)),
                   ),
                 ],
               ),
@@ -178,7 +249,8 @@ class _ServiceLogListScreenState extends State<ServiceLogListScreen> {
                             ? () {
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
-                                    builder: (_) => AddServiceLogScreen(vehicle: vehicle),
+                                    builder: (_) =>
+                                        AddServiceLogScreen(vehicle: vehicle),
                                   ),
                                 );
                               }
@@ -189,12 +261,15 @@ class _ServiceLogListScreenState extends State<ServiceLogListScreen> {
                         itemCount: filtered.length,
                         itemBuilder: (ctx, index) {
                           final item = filtered[index];
-                          final hasPhoto = item.receiptPhotoUrl != null && item.receiptPhotoUrl!.isNotEmpty;
+                          final hasPhoto = item.receiptPhotoUrl != null &&
+                              item.receiptPhotoUrl!.isNotEmpty;
 
                           return CustomCard(
                             padding: const EdgeInsets.all(14),
                             margin: const EdgeInsets.only(bottom: 10),
-                            onTap: hasPhoto ? () => _showReceiptDialog(context, item) : null,
+                            onTap: hasPhoto
+                                ? () => _showReceiptDialog(context, item)
+                                : null,
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -202,7 +277,8 @@ class _ServiceLogListScreenState extends State<ServiceLogListScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF0D9488).withValues(alpha: 0.12),
+                                    color: const Color(0xFF0D9488)
+                                        .withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(14),
                                   ),
                                   child: const Icon(
@@ -216,7 +292,8 @@ class _ServiceLogListScreenState extends State<ServiceLogListScreen> {
                                 // Details
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         item.serviceTypeName ?? 'Pemeliharaan',
@@ -239,36 +316,50 @@ class _ServiceLogListScreenState extends State<ServiceLogListScreen> {
                                       Row(
                                         children: [
                                           Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 8, vertical: 2),
                                             decoration: BoxDecoration(
-                                              color: Theme.of(context).brightness == Brightness.dark
+                                              color: Theme.of(context)
+                                                          .brightness ==
+                                                      Brightness.dark
                                                   ? const Color(0xFF334155)
                                                   : const Color(0xFFE2E8F0),
-                                              borderRadius: BorderRadius.circular(6),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
                                             ),
                                             child: Text(
                                               '${CurrencyFormatter.formatNumber(item.odometerKm)} KM',
-                                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                                              style: const TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w600),
                                             ),
                                           ),
                                           if (hasPhoto) ...[
                                             const SizedBox(width: 6),
                                             Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 6,
+                                                      vertical: 2),
                                               decoration: BoxDecoration(
-                                                color: const Color(0xFF3B82F6).withValues(alpha: 0.12),
-                                                borderRadius: BorderRadius.circular(4),
+                                                color: const Color(0xFF3B82F6)
+                                                    .withValues(alpha: 0.12),
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
                                               ),
                                               child: const Row(
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
-                                                  Icon(Icons.receipt, size: 12, color: Color(0xFF3B82F6)),
+                                                  Icon(Icons.receipt,
+                                                      size: 12,
+                                                      color: Color(0xFF3B82F6)),
                                                   SizedBox(width: 4),
                                                   Text(
                                                     'Nota',
                                                     style: TextStyle(
                                                       fontSize: 10,
-                                                      fontWeight: FontWeight.bold,
+                                                      fontWeight:
+                                                          FontWeight.bold,
                                                       color: Color(0xFF3B82F6),
                                                     ),
                                                   ),
@@ -278,11 +369,14 @@ class _ServiceLogListScreenState extends State<ServiceLogListScreen> {
                                           ],
                                         ],
                                       ),
-                                      if (item.notes != null && item.notes!.isNotEmpty) ...[
+                                      if (item.notes != null &&
+                                          item.notes!.isNotEmpty) ...[
                                         const SizedBox(height: 6),
                                         Text(
                                           item.notes!,
-                                          style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                                          style: const TextStyle(
+                                              fontSize: 11,
+                                              color: Color(0xFF94A3B8)),
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -326,4 +420,3 @@ class _ServiceLogListScreenState extends State<ServiceLogListScreen> {
     );
   }
 }
-

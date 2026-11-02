@@ -168,6 +168,7 @@ Dibangun dengan arsitektur bersih dan modular menggunakan **Provider State Manag
 4. **Riwayat Pemeliharaan (Service Log List)**:
    - Menampilkan catatan pengerjaan servis terurut dari yang terbaru.
    - Fitur pencarian berdasarkan nama servis, bengkel, atau catatan.
+   - Ekspor seluruh riwayat kendaraan aktif ke file CSV berformat UTF-8 yang bisa dibuka di Excel dan dibagikan.
    - Indikator badge dan dialog *preview* foto nota servis yang tersimpan di server Laragon.
 5. **Form Tambah Log Servis**:
    - Pilihan jenis servis dari katalog API.
