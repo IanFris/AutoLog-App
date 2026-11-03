@@ -25,7 +25,7 @@ class StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return CustomCard(
       onTap: onTap,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -37,15 +37,15 @@ class StatCard extends StatelessWidget {
                 title,
                 style: const TextStyle(
                   fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                   color: Color(0xFF64748B),
                 ),
               ),
               Container(
-                padding: const EdgeInsets.all(7),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: iconColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, size: 18, color: iconColor),
               ),
@@ -55,7 +55,7 @@ class StatCard extends StatelessWidget {
           Text(
             value,
             style: const TextStyle(
-              fontSize: 18,
+              fontSize: 19,
               fontWeight: FontWeight.w800,
               letterSpacing: -0.3,
             ),
@@ -80,4 +80,3 @@ class StatCard extends StatelessWidget {
     );
   }
 }
-

@@ -97,28 +97,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(6),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFF0D9488).withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
+                color: const Color(0xFF0F8B80).withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(13),
               ),
-              child: const Icon(Icons.directions_car,
-                  color: Color(0xFF0D9488), size: 20),
+              child: const Icon(Icons.directions_car_rounded,
+                  color: Color(0xFF0F8B80), size: 21),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'AutoLog',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                  'Garasi kamu',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                 ),
                 Text(
-                  'Garasi & Status Komponen',
-                  style: TextStyle(fontSize: 10, color: Color(0xFF64748B)),
+                  'Semua kendaraan dalam satu tempat',
+                  style: TextStyle(fontSize: 11, color: Color(0xFF72808C)),
                 ),
               ],
             ),
@@ -126,7 +127,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_circle_outline),
+            style: IconButton.styleFrom(
+              backgroundColor: Theme.of(context).cardColor,
+            ),
+            icon: const Icon(Icons.add_rounded),
             tooltip: 'Tambah Kendaraan',
             onPressed: () {
               Navigator.of(context).push(
@@ -135,7 +139,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.refresh),
+            style: IconButton.styleFrom(
+              backgroundColor: Theme.of(context).cardColor,
+            ),
+            icon: const Icon(Icons.refresh_rounded),
             tooltip: 'Muat Ulang',
             onPressed: _refresh,
           ),
@@ -224,17 +231,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0D9488).withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(12),
+                  color: const Color(0xFF0F8B80).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: const Row(
                   children: [
-                    Icon(Icons.phone_android, color: Color(0xFF0D9488)),
+                    Icon(Icons.phone_android_rounded, color: Color(0xFF0F8B80)),
                     SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         'Mode Tamu: data tersimpan di perangkat ini saja dan tidak dikirim ke cloud.',
-                        style: TextStyle(fontSize: 12),
+                        style: TextStyle(
+                          fontSize: 12,
+                          height: 1.4,
+                          color: Color(0xFF536A70),
+                        ),
                       ),
                     ),
                   ],
@@ -297,13 +308,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'Status Komponen Kendaraan',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    'Status komponen',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                   ),
                   Text(
                     '${allReminders.length} Komponen',
                     style:
-                        const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                        const TextStyle(fontSize: 12, color: Color(0xFF72808C)),
                   ),
                 ],
               ),
@@ -457,25 +468,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(18),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: Theme.of(context).brightness == Brightness.dark
-                ? const Color(0xFF334155)
-                : const Color(0xFFE2E8F0),
+                ? const Color(0xFF293844)
+                : const Color(0xFFE7ECEF),
           ),
+          boxShadow: Theme.of(context).brightness == Brightness.dark
+              ? null
+              : [
+                  BoxShadow(
+                    color: const Color(0xFF172B3A).withValues(alpha: 0.035),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
         ),
         child: Column(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
+                color: color.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 20),
             ),

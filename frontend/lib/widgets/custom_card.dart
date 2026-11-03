@@ -18,7 +18,7 @@ class CustomCard extends StatelessWidget {
     this.color,
     this.onTap,
     this.border,
-    this.borderRadius = 16,
+    this.borderRadius = 20,
     this.gradient,
   });
 
@@ -27,8 +27,8 @@ class CustomCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final defaultBg = isDark ? const Color(0xFF1E293B) : Colors.white;
     final defaultBorder = isDark
-        ? const BorderSide(color: Color(0xFF334155), width: 1)
-        : const BorderSide(color: Color(0xFFE2E8F0), width: 1);
+        ? const BorderSide(color: Color(0xFF293844), width: 1)
+        : const BorderSide(color: Color(0xFFE7ECEF), width: 1);
 
     final resolvedColor = gradient == null ? (color ?? defaultBg) : null;
 
@@ -37,14 +37,16 @@ class CustomCard extends StatelessWidget {
         color: resolvedColor,
         gradient: gradient,
         borderRadius: BorderRadius.circular(borderRadius),
-        border: gradient == null ? (border ?? Border.fromBorderSide(defaultBorder)) : null,
+        border: gradient == null
+            ? (border ?? Border.fromBorderSide(defaultBorder))
+            : null,
         boxShadow: isDark || gradient != null
             ? []
             : [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
                 ),
               ],
       ),

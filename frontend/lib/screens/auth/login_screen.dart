@@ -13,8 +13,8 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController(text: 'budi@autolog.com');
-  final _passwordController = TextEditingController(text: 'password123');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
@@ -127,67 +127,109 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings_ethernet),
+            style: IconButton.styleFrom(
+              backgroundColor: Theme.of(context).cardColor,
+            ),
+            icon: const Icon(Icons.tune_rounded),
             tooltip: 'Konfigurasi Server URL',
             onPressed: _showServerConfigDialog,
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.fromLTRB(22, 8, 22, 32),
           child: Form(
             key: _formKey,
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // App Logo & Branding
                 Center(
                   child: Container(
-                    padding: const EdgeInsets.all(18),
+                    width: 76,
+                    height: 76,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0D9488).withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF19A394), Color(0xFF08675F)],
+                      ),
+                      borderRadius: BorderRadius.circular(25),
+                      boxShadow: [
+                        BoxShadow(
+                          color:
+                              const Color(0xFF0F8B80).withValues(alpha: 0.25),
+                          blurRadius: 22,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
                     ),
                     child: const Icon(
-                      Icons.directions_car,
-                      size: 54,
-                      color: Color(0xFF0D9488),
+                      Icons.directions_car_filled_rounded,
+                      size: 38,
+                      color: Colors.white,
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 14),
                 const Text(
                   'AutoLog',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 28,
+                    color: Color(0xFF0F8B80),
+                    fontSize: 11,
                     fontWeight: FontWeight.w900,
-                    letterSpacing: -0.5,
+                    letterSpacing: 2.2,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 22),
                 const Text(
-                  'Aplikasi Pencatatan & Pengingat Servis Kendaraan',
+                  'Rawat kendaraan,',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF64748B),
+                    fontSize: 27,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.8,
                   ),
                 ),
-                const SizedBox(height: 36),
-
-                // Email Input
+                const Text(
+                  'tanpa lupa jadwal servis.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 27,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.8,
+                    color: Color(0xFF0F8B80),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'Catat perjalanan servis dan pantau kondisi kendaraanmu di satu tempat.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.5,
+                    color: Color(0xFF72808C),
+                  ),
+                ),
+                const SizedBox(height: 28),
+                const Text(
+                  'Masuk ke akun',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 14),
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(
-                    labelText: 'Email',
+                    labelText: 'Alamat email',
                     hintText: 'nama@email.com',
-                    prefixIcon: Icon(Icons.email_outlined),
+                    prefixIcon: Icon(Icons.alternate_email_rounded),
                   ),
                   validator: (val) {
                     if (val == null || val.trim().isEmpty) {
@@ -197,13 +239,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     return null;
                   },
                 ),
-                // Password Input
+                const SizedBox(height: 14),
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => auth.isLoading ? null : _login(),
                   decoration: InputDecoration(
                     labelText: 'Password',
-                    prefixIcon: const Icon(Icons.lock_outline),
+                    prefixIcon: const Icon(Icons.lock_outline_rounded),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword
@@ -222,9 +266,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 24),
-
-                // Login Button
+                const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: auth.isLoading ? null : _login,
                   child: auth.isLoading
@@ -236,45 +278,70 @@ class _LoginScreenState extends State<LoginScreen> {
                             color: Colors.white,
                           ),
                         )
-                      : const Text('Masuk (Login)',
-                          style: TextStyle(fontSize: 16)),
+                      : const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('Masuk'),
+                            SizedBox(width: 8),
+                            Icon(Icons.arrow_forward_rounded, size: 18),
+                          ],
+                        ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 18),
+                const Row(
+                  children: [
+                    Expanded(child: Divider()),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        'atau tanpa akun',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF87939C),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Expanded(child: Divider()),
+                  ],
+                ),
+                const SizedBox(height: 14),
                 OutlinedButton.icon(
                   onPressed: auth.isLoading ? null : _continueAsGuest,
-                  icon: const Icon(Icons.person_outline),
+                  icon: const Icon(Icons.person_outline_rounded),
                   label: const Text('Lanjutkan sebagai Tamu'),
                 ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Tanpa registrasi. Data tamu hanya tersimpan di perangkat ini.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                ),
-                const SizedBox(height: 16),
-
-                // Demo account info note
+                const SizedBox(height: 10),
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0D9488).withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(12),
+                    color: const Color(0xFF0F8B80).withValues(alpha: 0.07),
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Text(
-                    'Akun Demo: budi@autolog.com | Password: password123\nServer URL aktif: http://10.0.2.2/autolog/api (Laragon)',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        fontSize: 11, color: Color(0xFF0D9488), height: 1.4),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.phone_android_rounded,
+                          size: 16, color: Color(0xFF0F8B80)),
+                      SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          'Mode tamu menyimpan data hanya di perangkat ini.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF536A70),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 20),
-
-                // Switch to Register
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('Belum punya akun? ',
-                        style: TextStyle(fontSize: 13)),
+                    const Text('Belum punya akun?'),
                     TextButton(
                       onPressed: () {
                         Navigator.of(context).push(

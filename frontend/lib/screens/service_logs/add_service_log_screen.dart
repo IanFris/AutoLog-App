@@ -65,6 +65,26 @@ class _AddServiceLogScreenState extends State<AddServiceLogScreen> {
       text: serviceLog?.workshopName ?? 'Bengkel Resmi',
     );
     _notesController = TextEditingController(text: serviceLog?.notes ?? '');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadServiceTypes();
+    });
+  }
+
+  Future<void> _loadServiceTypes() async {
+    final provider = context.read<ServiceProvider>();
+    if (provider.serviceTypes.isEmpty) {
+      await provider.fetchServiceTypes();
+    }
+    if (!mounted || provider.serviceTypes.isEmpty) return;
+
+    final selectedId = _selectedServiceTypeId;
+    if (selectedId != null &&
+        provider.serviceTypes.any((type) => type.id == selectedId)) {
+      return;
+    }
+    setState(() {
+      _selectedServiceTypeId = provider.serviceTypes.first.id;
+    });
   }
 
   @override
@@ -173,7 +193,7 @@ class _AddServiceLogScreenState extends State<AddServiceLogScreen> {
       ),
     );
 
-    if (confirmed != true) return;
+    if (!mounted || confirmed != true) return;
 
     final sp = context.read<ServiceProvider>();
     final success = await sp.deleteServiceLog(serviceLog.id,
@@ -271,10 +291,6 @@ class _AddServiceLogScreenState extends State<AddServiceLogScreen> {
     final sp = context.watch<ServiceProvider>();
     final types = sp.serviceTypes;
 
-    if (_selectedServiceTypeId == null && types.isNotEmpty) {
-      _selectedServiceTypeId = types.first.id;
-    }
-
     final isEditMode = widget.serviceLog != null;
 
     return Scaffold(
@@ -345,47 +361,70 @@ class _AddServiceLogScreenState extends State<AddServiceLogScreen> {
 
             const SizedBox(height: 20),
 
-            if (types.isEmpty && sp.errorMessage != null)
+            if (types.isEmpty && sp.serviceTypesError != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Gagal memuat katalog servis: ${sp.errorMessage}',
+                      'Gagal memuat katalog servis: ${sp.serviceTypesError}',
                       style: const TextStyle(color: Color(0xFFDC2626)),
                     ),
                     TextButton(
-                      onPressed: sp.fetchServiceTypes,
+                      onPressed: _loadServiceTypes,
                       child: const Text('Coba lagi'),
                     ),
                   ],
                 ),
               ),
 
-            // Dropdown Jenis Servis
-            DropdownButtonFormField<int>(
-              initialValue: _selectedServiceTypeId,
-              decoration: const InputDecoration(
-                labelText: 'Jenis Pemeliharaan / Servis *',
-                prefixIcon: Icon(Icons.category),
+            if (types.isEmpty && sp.isLoadingServiceTypes)
+              const InputDecorator(
+                decoration: InputDecoration(
+                  labelText: 'Jenis Pemeliharaan / Servis *',
+                  prefixIcon: Icon(Icons.category),
+                ),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    SizedBox(width: 12),
+                    Text('Memuat katalog servis...'),
+                  ],
+                ),
+              )
+            else
+              // Dropdown Jenis Servis
+              DropdownButtonFormField<int>(
+                key: ValueKey(types.map((type) => type.id).join(',')),
+                initialValue: _selectedServiceTypeId,
+                decoration: const InputDecoration(
+                  labelText: 'Jenis Pemeliharaan / Servis *',
+                  prefixIcon: Icon(Icons.category),
+                  hintText: 'Pilih jenis servis',
+                ),
+                validator: (value) =>
+                    value == null ? 'Silakan pilih jenis servis.' : null,
+                items: types.map((t) {
+                  return DropdownMenuItem(
+                    value: t.id,
+                    child: Row(
+                      children: [
+                        Icon(t.iconData, size: 18, color: t.color),
+                        const SizedBox(width: 10),
+                        Text(t.name, style: const TextStyle(fontSize: 13)),
+                      ],
+                    ),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) setState(() => _selectedServiceTypeId = val);
+                },
               ),
-              items: types.map((t) {
-                return DropdownMenuItem(
-                  value: t.id,
-                  child: Row(
-                    children: [
-                      Icon(t.iconData, size: 18, color: t.color),
-                      const SizedBox(width: 10),
-                      Text(t.name, style: const TextStyle(fontSize: 13)),
-                    ],
-                  ),
-                );
-              }).toList(),
-              onChanged: (val) {
-                if (val != null) setState(() => _selectedServiceTypeId = val);
-              },
-            ),
 
             const SizedBox(height: 16),
 

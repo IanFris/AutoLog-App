@@ -27,14 +27,26 @@ class VehicleHeaderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     if (vehicle == null) {
       return Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: const Color(0xFF0F766E),
-          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF128E82), Color(0xFF0B625D)],
+          ),
+          borderRadius: BorderRadius.circular(26),
         ),
         child: Column(
           children: [
-            const Icon(Icons.no_crash, size: 48, color: Colors.white70),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: const Icon(Icons.no_crash_rounded,
+                  size: 34, color: Colors.white),
+            ),
             const SizedBox(height: 12),
             const Text(
               'Belum Ada Kendaraan',
@@ -71,20 +83,20 @@ class VehicleHeaderCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFF0F766E), // Teal 700
-            Color(0xFF134E4A), // Teal 900
+            Color(0xFF128E82),
+            Color(0xFF0B625D),
           ],
         ),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(26),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F766E).withValues(alpha: 0.35),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+            color: const Color(0xFF0B766E).withValues(alpha: 0.20),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -247,7 +259,7 @@ class VehicleHeaderCard extends StatelessWidget {
               color: Colors.white,
               fontSize: 22,
               fontWeight: FontWeight.w800,
-              letterSpacing: -0.4,
+              letterSpacing: -0.5,
             ),
           ),
 

@@ -89,12 +89,13 @@ class ExpenseSummaryScreen extends StatelessWidget {
           // Total Spending Gradient Card
           CustomCard(
             padding: const EdgeInsets.all(20),
+            borderRadius: 24,
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFF0F766E),
-                Color(0xFF134E4A),
+                Color(0xFF128E82),
+                Color(0xFF0B625D),
               ],
             ),
             child: Column(
@@ -106,7 +107,7 @@ class ExpenseSummaryScreen extends StatelessWidget {
                     Text(
                       'TOTAL BIAYA PEMELIHARAAN',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 10,
                         letterSpacing: 0.8,
                         fontWeight: FontWeight.w700,
                         color: Colors.white.withValues(alpha: 0.8),
@@ -135,9 +136,9 @@ class ExpenseSummaryScreen extends StatelessWidget {
                   CurrencyFormatter.format(totalAll),
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 28,
+                    fontSize: 30,
                     fontWeight: FontWeight.w900,
-                    letterSpacing: -0.5,
+                    letterSpacing: -0.8,
                   ),
                 ),
                 const SizedBox(height: 6),

@@ -15,7 +15,10 @@ class ServiceProvider extends ChangeNotifier {
   ExpenseSummary? _expenses;
 
   bool _isLoading = false;
+  bool _isLoadingServiceTypes = false;
   String? _errorMessage;
+  String? _serviceTypesError;
+  Future<void>? _serviceTypesLoad;
   int _requestId = 0;
   int? _vehicleId;
   bool _isGuest = false;
@@ -25,6 +28,8 @@ class ServiceProvider extends ChangeNotifier {
   List<ComponentReminder> get reminders => _reminders;
   ExpenseSummary? get expenses => _expenses;
   bool get isLoading => _isLoading;
+  bool get isLoadingServiceTypes => _isLoadingServiceTypes;
+  String? get serviceTypesError => _serviceTypesError;
   String? get errorMessage => _errorMessage;
 
   List<ComponentReminder> get urgentReminders => _reminders
@@ -33,16 +38,25 @@ class ServiceProvider extends ChangeNotifier {
           r.statusColor == ReminderColorStatus.kuning)
       .toList();
 
-  Future<void> fetchServiceTypes() async {
+  Future<void> fetchServiceTypes() {
+    if (_serviceTypes.isNotEmpty) return Future<void>.value();
+    return _serviceTypesLoad ??= _loadServiceTypes();
+  }
+
+  Future<void> _loadServiceTypes() async {
+    _isLoadingServiceTypes = true;
+    _serviceTypesError = null;
+    notifyListeners();
     try {
       _isGuest = await SessionService.isGuest();
       _serviceTypes = _isGuest
           ? await GuestDataService.getServiceTypes()
           : await ApiService.getServiceTypes();
-      _errorMessage = null;
-      notifyListeners();
     } catch (e) {
-      _errorMessage = e.toString();
+      _serviceTypesError = e.toString();
+    } finally {
+      _isLoadingServiceTypes = false;
+      _serviceTypesLoad = null;
       notifyListeners();
     }
   }
@@ -64,7 +78,12 @@ class ServiceProvider extends ChangeNotifier {
       if (_isGuest) {
         _serviceTypes = await GuestDataService.getServiceTypes();
       } else if (_serviceTypes.isEmpty) {
-        _serviceTypes = await ApiService.getServiceTypes();
+        await fetchServiceTypes();
+        if (_serviceTypes.isEmpty) {
+          throw Exception(
+            _serviceTypesError ?? 'Katalog jenis servis belum tersedia.',
+          );
+        }
       }
 
       final results = await Future.wait<Object>([
@@ -103,7 +122,10 @@ class ServiceProvider extends ChangeNotifier {
     _reminders = [];
     _expenses = null;
     _isLoading = false;
+    _isLoadingServiceTypes = false;
     _errorMessage = null;
+    _serviceTypesError = null;
+    _serviceTypesLoad = null;
     notifyListeners();
   }
 

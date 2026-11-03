@@ -18,7 +18,7 @@ class ComponentStatusCard extends StatelessWidget {
     final statusColor = reminder.color;
 
     return CustomCard(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       margin: const EdgeInsets.only(bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -31,7 +31,7 @@ class ComponentStatusCard extends StatelessWidget {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: statusColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(
                   reminder.iconData,
@@ -71,10 +71,11 @@ class ComponentStatusCard extends StatelessWidget {
 
               // Status Badge (Hijau, Kuning, Merah)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: statusColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(24),
                   border: Border.all(
                     color: statusColor.withValues(alpha: 0.35),
                   ),
@@ -151,15 +152,18 @@ class ComponentStatusCard extends StatelessWidget {
                     const Icon(Icons.event, size: 14, color: Color(0xFF94A3B8)),
                     const SizedBox(width: 4),
                     Text(
-                      reminder.remainingDays != null && reminder.remainingDays! < 0
+                      reminder.remainingDays != null &&
+                              reminder.remainingDays! < 0
                           ? 'Terlewat ${reminder.remainingDays!.abs()} hari'
-                          : reminder.remainingDays != null && reminder.remainingDays! <= 7
+                          : reminder.remainingDays != null &&
+                                  reminder.remainingDays! <= 7
                               ? 'Sisa ${reminder.remainingDays} hari'
                               : reminder.dueDate!,
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: reminder.remainingDays != null && reminder.remainingDays! < 0
+                        color: reminder.remainingDays != null &&
+                                reminder.remainingDays! < 0
                             ? const Color(0xFFEF4444)
                             : null,
                       ),
@@ -196,4 +200,3 @@ class ComponentStatusCard extends StatelessWidget {
     );
   }
 }
-

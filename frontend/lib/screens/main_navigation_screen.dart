@@ -33,26 +33,50 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         index: _currentIndex,
         children: pages,
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: _onTabSelected,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.speed_outlined),
-            selectedIcon: Icon(Icons.speed),
-            label: 'Garasi & Status',
+      bottomNavigationBar: Container(
+        margin: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF293844)
+                : const Color(0xFFE7ECEF),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.build_outlined),
-            selectedIcon: Icon(Icons.build),
-            label: 'Riwayat Servis',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.bar_chart_outlined),
-            selectedIcon: Icon(Icons.bar_chart),
-            label: 'Biaya Servis',
-          ),
-        ],
+          boxShadow: Theme.of(context).brightness == Brightness.dark
+              ? null
+              : [
+                  BoxShadow(
+                    color: const Color(0xFF172B3A).withValues(alpha: 0.08),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: NavigationBar(
+          height: 72,
+          backgroundColor: Colors.transparent,
+          selectedIndex: _currentIndex,
+          onDestinationSelected: _onTabSelected,
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.directions_car_outlined),
+              selectedIcon: Icon(Icons.directions_car),
+              label: 'Garasi',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.receipt_long_outlined),
+              selectedIcon: Icon(Icons.receipt_long),
+              label: 'Riwayat',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.query_stats_outlined),
+              selectedIcon: Icon(Icons.query_stats),
+              label: 'Biaya',
+            ),
+          ],
+        ),
       ),
     );
   }

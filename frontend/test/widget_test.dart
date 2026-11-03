@@ -11,6 +11,7 @@ import 'package:autolog/providers/vehicle_provider.dart';
 import 'package:autolog/models/user.dart';
 import 'package:autolog/services/session_service.dart';
 import 'package:autolog/screens/vehicles/add_edit_vehicle_screen.dart';
+import 'package:autolog/screens/service_logs/add_service_log_screen.dart';
 import 'package:autolog/utils/service_log_csv_exporter.dart';
 
 void main() {
@@ -55,7 +56,9 @@ void main() {
     await tester.pumpWidget(const AutoLogApp());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Lanjutkan sebagai Tamu'));
+    final guestButton = find.text('Lanjutkan sebagai Tamu');
+    await tester.ensureVisible(guestButton);
+    await tester.tap(guestButton);
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Mode Tamu: data tersimpan'), findsOneWidget);
@@ -89,6 +92,54 @@ void main() {
     expect(find.text('Edit Kendaraan'), findsOneWidget);
     expect(find.text('Simpan Perubahan'), findsWidgets);
     expect(find.text('Honda Vario 160'), findsWidgets);
+  });
+
+  testWidgets('service type dropdown loads and allows selection',
+      (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await SessionService.saveUser(
+      User(
+        id: 0,
+        name: 'Tamu',
+        email: 'guest@local.autolog',
+        isGuest: true,
+      ),
+    );
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AuthProvider>(create: (_) => AuthProvider()),
+          ChangeNotifierProvider<ServiceProvider>(
+              create: (_) => ServiceProvider()),
+        ],
+        child: MaterialApp(
+          home: AddServiceLogScreen(
+            vehicle: Vehicle(
+              id: 1,
+              userId: 0,
+              type: VehicleType.motor,
+              brandModel: 'Honda Vario',
+              licensePlate: 'B 1234 XYZ',
+              currentOdometer: 12000,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final serviceDropdown = find.byType(DropdownButtonFormField<int>);
+    expect(serviceDropdown, findsOneWidget);
+    await tester.ensureVisible(serviceDropdown);
+    await tester.tap(serviceDropdown);
+    await tester.pumpAndSettle();
+
+    final serviceOption = find.text('Ganti Oli Gardan / Transmisi');
+    expect(serviceOption, findsOneWidget);
+    await tester.tap(serviceOption);
+    await tester.pumpAndSettle();
+    expect(serviceOption, findsOneWidget);
   });
 
   test('guest vehicle and service data stays in local storage', () async {
