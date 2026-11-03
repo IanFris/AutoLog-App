@@ -218,8 +218,9 @@ class _AddEditVehicleScreenState extends State<AddEditVehicleScreen> {
                 prefixIcon: Icon(Icons.drive_file_rename_outline),
               ),
               validator: (val) {
-                if (val == null || val.trim().isEmpty)
+                if (val == null || val.trim().isEmpty) {
                   return 'Merk & model wajib diisi';
+                }
                 return null;
               },
             ),
@@ -253,8 +254,9 @@ class _AddEditVehicleScreenState extends State<AddEditVehicleScreen> {
                 prefixIcon: Icon(Icons.credit_card),
               ),
               validator: (val) {
-                if (val == null || val.trim().isEmpty)
+                if (val == null || val.trim().isEmpty) {
                   return 'Nomor polisi wajib diisi';
+                }
                 return null;
               },
             ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'service_logs/service_log_list_screen.dart';
 import 'expenses/expense_summary_screen.dart';
+import 'settings/settings_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -26,6 +27,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       ),
       const ServiceLogListScreen(),
       const ExpenseSummaryScreen(),
+      const SettingsScreen(),
     ];
 
     return Scaffold(
@@ -74,6 +76,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               icon: Icon(Icons.query_stats_outlined),
               selectedIcon: Icon(Icons.query_stats),
               label: 'Biaya',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.settings_outlined),
+              selectedIcon: Icon(Icons.settings),
+              label: 'Pengaturan',
             ),
           ],
         ),

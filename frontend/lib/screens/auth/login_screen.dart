@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/constants/api_constants.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/settings_provider.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -55,9 +55,10 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void _showServerConfigDialog() {
-    final controller = TextEditingController(text: ApiConstants.baseUrl);
-    showDialog(
+  Future<void> _showServerConfigDialog() async {
+    final settings = context.read<SettingsProvider>();
+    final controller = TextEditingController(text: settings.apiBaseUrl);
+    final value = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -105,18 +106,22 @@ class _LoginScreenState extends State<LoginScreen> {
             child: const Text('Batal'),
           ),
           ElevatedButton(
-            onPressed: () {
-              ApiConstants.setCustomBaseUrl(controller.text.trim());
-              Navigator.of(ctx).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                    content:
-                        Text('Server URL diubah: ${ApiConstants.baseUrl}')),
-              );
-            },
+            onPressed: () => Navigator.of(ctx).pop(controller.text),
             child: const Text('Simpan'),
           ),
         ],
+      ),
+    );
+    controller.dispose();
+    if (value == null || !mounted) return;
+
+    final saved = await settings.setApiBaseUrl(value);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(saved
+            ? 'Alamat server berhasil disimpan.'
+            : settings.errorMessage ?? 'Gagal menyimpan alamat server.'),
       ),
     );
   }

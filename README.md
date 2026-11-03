@@ -180,6 +180,10 @@ Dibangun dengan arsitektur bersih dan modular menggunakan **Provider State Manag
    - Estimasi biaya perawatan per kilometer (**Rp / KM**).
    - Visualisasi tren pengeluaran 6 bulan terakhir.
    - Diagram persentase biaya per kategori komponen.
+7. **Pengaturan**:
+   - Pilihan tema sistem, terang, atau gelap yang tersimpan di perangkat.
+   - Konfigurasi Base URL API yang persisten, termasuk opsi untuk kembali ke URL bawaan.
+   - Informasi akun dan aksi logout; data guest tetap tersimpan lokal.
 
 ### Konfigurasi Base URL API:
 Base URL diatur di file `frontend/lib/core/constants/api_constants.dart`:

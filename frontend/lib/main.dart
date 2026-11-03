@@ -5,6 +5,7 @@ import 'core/theme/app_theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/vehicle_provider.dart';
 import 'providers/service_provider.dart';
+import 'providers/settings_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/main_navigation_screen.dart';
 
@@ -33,22 +34,28 @@ class AutoLogApp extends StatelessWidget {
             create: (_) => VehicleProvider()),
         ChangeNotifierProvider<ServiceProvider>(
             create: (_) => ServiceProvider()),
+        ChangeNotifierProvider<SettingsProvider>(
+            create: (_) => SettingsProvider()),
       ],
       child: Consumer<AuthProvider>(
         builder: (context, auth, _) {
-          return MaterialApp(
-            title: 'AutoLog',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: ThemeMode.system,
-            home: auth.isInitializing
-                ? const Scaffold(
-                    body: Center(child: CircularProgressIndicator()),
-                  )
-                : auth.isAuthenticated
-                    ? const MainNavigationScreen()
-                    : const LoginScreen(),
+          return Consumer<SettingsProvider>(
+            builder: (context, settings, _) {
+              return MaterialApp(
+                title: 'AutoLog',
+                debugShowCheckedModeBanner: false,
+                theme: AppTheme.lightTheme,
+                darkTheme: AppTheme.darkTheme,
+                themeMode: settings.themeMode,
+                home: auth.isInitializing || !settings.isInitialized
+                    ? const Scaffold(
+                        body: Center(child: CircularProgressIndicator()),
+                      )
+                    : auth.isAuthenticated
+                        ? const MainNavigationScreen()
+                        : const LoginScreen(),
+              );
+            },
           );
         },
       ),

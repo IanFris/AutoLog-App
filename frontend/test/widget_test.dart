@@ -7,6 +7,7 @@ import 'package:autolog/models/service_log.dart';
 import 'package:autolog/models/vehicle.dart';
 import 'package:autolog/providers/auth_provider.dart';
 import 'package:autolog/providers/service_provider.dart';
+import 'package:autolog/providers/settings_provider.dart';
 import 'package:autolog/providers/vehicle_provider.dart';
 import 'package:autolog/models/user.dart';
 import 'package:autolog/services/session_service.dart';
@@ -63,6 +64,35 @@ void main() {
 
     expect(find.textContaining('Mode Tamu: data tersimpan'), findsOneWidget);
     expect((await SessionService.getUser())?.isGuest, isTrue);
+
+    await tester.tap(find.text('Pengaturan').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Tema aplikasi'), findsOneWidget);
+    expect(find.byType(SegmentedButton<ThemeMode>), findsOneWidget);
+    expect(find.text('Server API'), findsOneWidget);
+  });
+
+  test('theme and API URL settings persist locally', () async {
+    SharedPreferences.setMockInitialValues({});
+    final settings = SettingsProvider();
+    await settings.load();
+
+    expect(await settings.setThemeMode(ThemeMode.dark), isTrue);
+    expect(
+      await settings.setApiBaseUrl('https://example.test/autolog/api/'),
+      isTrue,
+    );
+    expect(settings.apiBaseUrl, 'https://example.test/autolog/api');
+
+    final restored = SettingsProvider();
+    await restored.load();
+    expect(restored.themeMode, ThemeMode.dark);
+    expect(restored.apiBaseUrl, 'https://example.test/autolog/api');
+    expect(await restored.setApiBaseUrl('ftp://invalid.test'), isFalse);
+    expect(restored.apiBaseUrl, 'https://example.test/autolog/api');
+
+    expect(await restored.resetApiBaseUrl(), isTrue);
+    expect(restored.apiBaseUrl, isNot('https://example.test/autolog/api'));
   });
 
   testWidgets('Edit vehicle screen shows edit mode for existing vehicle',
