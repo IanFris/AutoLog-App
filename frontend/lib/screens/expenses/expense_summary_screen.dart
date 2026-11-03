@@ -50,14 +50,17 @@ class ExpenseSummaryScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout, color: Color(0xFFEF4444)),
-            tooltip: 'Logout',
+            tooltip: auth.isGuest ? 'Keluar dari mode tamu' : 'Logout',
             onPressed: () {
               showDialog(
                 context: context,
                 builder: (ctx) => AlertDialog(
-                  title: const Text('Konfirmasi Logout'),
-                  content:
-                      const Text('Apakah Anda yakin ingin keluar dari akun?'),
+                  title: Text(auth.isGuest
+                      ? 'Keluar dari mode tamu?'
+                      : 'Konfirmasi Logout'),
+                  content: Text(auth.isGuest
+                      ? 'Data tamu tetap tersimpan di perangkat ini dan dapat dibuka kembali nanti.'
+                      : 'Apakah Anda yakin ingin keluar dari akun?'),
                   actions: [
                     TextButton(
                         onPressed: () => Navigator.of(ctx).pop(),
@@ -71,7 +74,7 @@ class ExpenseSummaryScreen extends StatelessWidget {
                         context.read<ServiceProvider>().reset();
                         auth.logout();
                       },
-                      child: const Text('Logout'),
+                      child: Text(auth.isGuest ? 'Keluar' : 'Logout'),
                     ),
                   ],
                 ),

@@ -29,8 +29,10 @@ class AutoLogApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<AuthProvider>(create: (_) => AuthProvider()),
-        ChangeNotifierProvider<VehicleProvider>(create: (_) => VehicleProvider()),
-        ChangeNotifierProvider<ServiceProvider>(create: (_) => ServiceProvider()),
+        ChangeNotifierProvider<VehicleProvider>(
+            create: (_) => VehicleProvider()),
+        ChangeNotifierProvider<ServiceProvider>(
+            create: (_) => ServiceProvider()),
       ],
       child: Consumer<AuthProvider>(
         builder: (context, auth, _) {
@@ -40,9 +42,13 @@ class AutoLogApp extends StatelessWidget {
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: ThemeMode.system,
-            home: auth.isAuthenticated
-                ? const MainNavigationScreen()
-                : const LoginScreen(),
+            home: auth.isInitializing
+                ? const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  )
+                : auth.isAuthenticated
+                    ? const MainNavigationScreen()
+                    : const LoginScreen(),
           );
         },
       ),

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/api_constants.dart';
 import '../../providers/auth_provider.dart';
@@ -43,6 +43,18 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _continueAsGuest() async {
+    final auth = context.read<AuthProvider>();
+    await auth.startGuestSession();
+    if (!mounted || auth.currentUser != null) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(auth.errorMessage ?? 'Gagal memulai mode tamu.'),
+        backgroundColor: const Color(0xFFEF4444),
+      ),
+    );
+  }
+
   void _showServerConfigDialog() {
     final controller = TextEditingController(text: ApiConstants.baseUrl);
     showDialog(
@@ -72,12 +84,16 @@ class _LoginScreenState extends State<LoginScreen> {
               runSpacing: 4,
               children: [
                 ActionChip(
-                  label: const Text('Localhost (Web/Desktop)', style: TextStyle(fontSize: 11)),
-                  onPressed: () => controller.text = 'http://localhost/autolog/api',
+                  label: const Text('Localhost (Web/Desktop)',
+                      style: TextStyle(fontSize: 11)),
+                  onPressed: () =>
+                      controller.text = 'http://localhost/autolog/api',
                 ),
                 ActionChip(
-                  label: const Text('10.0.2.2 (Emulator Android)', style: TextStyle(fontSize: 11)),
-                  onPressed: () => controller.text = 'http://10.0.2.2/autolog/api',
+                  label: const Text('10.0.2.2 (Emulator Android)',
+                      style: TextStyle(fontSize: 11)),
+                  onPressed: () =>
+                      controller.text = 'http://10.0.2.2/autolog/api',
                 ),
               ],
             ),
@@ -93,7 +109,9 @@ class _LoginScreenState extends State<LoginScreen> {
               ApiConstants.setCustomBaseUrl(controller.text.trim());
               Navigator.of(ctx).pop();
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Server URL diubah: ${ApiConstants.baseUrl}')),
+                SnackBar(
+                    content:
+                        Text('Server URL diubah: ${ApiConstants.baseUrl}')),
               );
             },
             child: const Text('Simpan'),
@@ -172,13 +190,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     prefixIcon: Icon(Icons.email_outlined),
                   ),
                   validator: (val) {
-                    if (val == null || val.trim().isEmpty) return 'Email wajib diisi';
+                    if (val == null || val.trim().isEmpty) {
+                      return 'Email wajib diisi';
+                    }
                     if (!val.contains('@')) return 'Format email tidak valid';
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
-
                 // Password Input
                 TextFormField(
                   controller: _passwordController,
@@ -188,14 +206,18 @@ class _LoginScreenState extends State<LoginScreen> {
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
                       ),
                       onPressed: () =>
                           setState(() => _obscurePassword = !_obscurePassword),
                     ),
                   ),
                   validator: (val) {
-                    if (val == null || val.isEmpty) return 'Password wajib diisi';
+                    if (val == null || val.isEmpty) {
+                      return 'Password wajib diisi';
+                    }
                     if (val.length < 6) return 'Password minimal 6 karakter';
                     return null;
                   },
@@ -214,7 +236,20 @@ class _LoginScreenState extends State<LoginScreen> {
                             color: Colors.white,
                           ),
                         )
-                      : const Text('Masuk (Login)', style: TextStyle(fontSize: 16)),
+                      : const Text('Masuk (Login)',
+                          style: TextStyle(fontSize: 16)),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: auth.isLoading ? null : _continueAsGuest,
+                  icon: const Icon(Icons.person_outline),
+                  label: const Text('Lanjutkan sebagai Tamu'),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Tanpa registrasi. Data tamu hanya tersimpan di perangkat ini.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                 ),
                 const SizedBox(height: 16),
 
@@ -228,7 +263,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: const Text(
                     'Akun Demo: budi@autolog.com | Password: password123\nServer URL aktif: http://10.0.2.2/autolog/api (Laragon)',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 11, color: Color(0xFF0D9488), height: 1.4),
+                    style: TextStyle(
+                        fontSize: 11, color: Color(0xFF0D9488), height: 1.4),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -237,16 +273,19 @@ class _LoginScreenState extends State<LoginScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('Belum punya akun? ', style: TextStyle(fontSize: 13)),
+                    const Text('Belum punya akun? ',
+                        style: TextStyle(fontSize: 13)),
                     TextButton(
                       onPressed: () {
                         Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                          MaterialPageRoute(
+                              builder: (_) => const RegisterScreen()),
                         );
                       },
                       child: const Text(
                         'Daftar Sekarang',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 13),
                       ),
                     ),
                   ],
@@ -259,5 +298,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-
-

@@ -5,6 +5,8 @@ import '../models/service_log.dart';
 import '../models/component_reminder.dart';
 import '../models/expense_summary.dart';
 import '../services/api_service.dart';
+import '../services/guest_data_service.dart';
+import '../services/session_service.dart';
 
 class ServiceProvider extends ChangeNotifier {
   List<ServiceType> _serviceTypes = [];
@@ -16,6 +18,7 @@ class ServiceProvider extends ChangeNotifier {
   String? _errorMessage;
   int _requestId = 0;
   int? _vehicleId;
+  bool _isGuest = false;
 
   List<ServiceType> get serviceTypes => _serviceTypes;
   List<ServiceLog> get serviceLogs => _serviceLogs;
@@ -32,7 +35,10 @@ class ServiceProvider extends ChangeNotifier {
 
   Future<void> fetchServiceTypes() async {
     try {
-      _serviceTypes = await ApiService.getServiceTypes();
+      _isGuest = await SessionService.isGuest();
+      _serviceTypes = _isGuest
+          ? await GuestDataService.getServiceTypes()
+          : await ApiService.getServiceTypes();
       _errorMessage = null;
       notifyListeners();
     } catch (e) {
@@ -43,6 +49,7 @@ class ServiceProvider extends ChangeNotifier {
 
   Future<void> fetchVehicleData(int vehicleId) async {
     final requestId = ++_requestId;
+    _isGuest = await SessionService.isGuest();
     if (_vehicleId != vehicleId) {
       _vehicleId = vehicleId;
       _serviceLogs = [];
@@ -54,14 +61,22 @@ class ServiceProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      if (_serviceTypes.isEmpty) {
+      if (_isGuest) {
+        _serviceTypes = await GuestDataService.getServiceTypes();
+      } else if (_serviceTypes.isEmpty) {
         _serviceTypes = await ApiService.getServiceTypes();
       }
 
       final results = await Future.wait<Object>([
-        ApiService.getServiceLogs(vehicleId),
-        ApiService.getReminders(vehicleId),
-        ApiService.getExpenses(vehicleId),
+        _isGuest
+            ? GuestDataService.getServiceLogs(vehicleId)
+            : ApiService.getServiceLogs(vehicleId),
+        _isGuest
+            ? GuestDataService.getReminders(vehicleId)
+            : ApiService.getReminders(vehicleId),
+        _isGuest
+            ? GuestDataService.getExpenses(vehicleId)
+            : ApiService.getExpenses(vehicleId),
       ]);
 
       if (requestId != _requestId) return;
@@ -82,6 +97,8 @@ class ServiceProvider extends ChangeNotifier {
   void reset() {
     _requestId++;
     _vehicleId = null;
+    _isGuest = false;
+    _serviceTypes = [];
     _serviceLogs = [];
     _reminders = [];
     _expenses = null;
@@ -106,16 +123,29 @@ class ServiceProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await ApiService.createServiceLog(
-        vehicleId: vehicleId,
-        serviceTypeId: serviceTypeId,
-        serviceDate: serviceDate,
-        odometerKm: odometerKm,
-        cost: cost,
-        workshopName: workshopName,
-        notes: notes,
-        receiptPhoto: receiptPhoto,
-      );
+      if (_isGuest) {
+        await GuestDataService.createServiceLog(
+          vehicleId: vehicleId,
+          serviceTypeId: serviceTypeId,
+          serviceDate: serviceDate,
+          odometerKm: odometerKm,
+          cost: cost,
+          workshopName: workshopName,
+          notes: notes,
+          receiptPhoto: receiptPhoto,
+        );
+      } else {
+        await ApiService.createServiceLog(
+          vehicleId: vehicleId,
+          serviceTypeId: serviceTypeId,
+          serviceDate: serviceDate,
+          odometerKm: odometerKm,
+          cost: cost,
+          workshopName: workshopName,
+          notes: notes,
+          receiptPhoto: receiptPhoto,
+        );
+      }
 
       if (_vehicleId == vehicleId) {
         await fetchVehicleData(vehicleId);
@@ -149,17 +179,31 @@ class ServiceProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await ApiService.updateServiceLog(
-        serviceLogId: serviceLogId,
-        vehicleId: vehicleId,
-        serviceTypeId: serviceTypeId,
-        serviceDate: serviceDate,
-        odometerKm: odometerKm,
-        cost: cost,
-        workshopName: workshopName,
-        notes: notes,
-        receiptPhoto: receiptPhoto,
-      );
+      if (_isGuest) {
+        await GuestDataService.updateServiceLog(
+          serviceLogId: serviceLogId,
+          vehicleId: vehicleId,
+          serviceTypeId: serviceTypeId,
+          serviceDate: serviceDate,
+          odometerKm: odometerKm,
+          cost: cost,
+          workshopName: workshopName,
+          notes: notes,
+          receiptPhoto: receiptPhoto,
+        );
+      } else {
+        await ApiService.updateServiceLog(
+          serviceLogId: serviceLogId,
+          vehicleId: vehicleId,
+          serviceTypeId: serviceTypeId,
+          serviceDate: serviceDate,
+          odometerKm: odometerKm,
+          cost: cost,
+          workshopName: workshopName,
+          notes: notes,
+          receiptPhoto: receiptPhoto,
+        );
+      }
 
       if (_vehicleId == vehicleId) {
         await fetchVehicleData(vehicleId);
@@ -180,7 +224,11 @@ class ServiceProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await ApiService.deleteServiceLog(serviceLogId);
+      if (_isGuest) {
+        await GuestDataService.deleteServiceLog(serviceLogId);
+      } else {
+        await ApiService.deleteServiceLog(serviceLogId);
+      }
       if (_vehicleId == vehicleId) {
         await fetchVehicleData(vehicleId);
       }

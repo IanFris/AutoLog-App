@@ -6,7 +6,10 @@ import 'package:autolog/main.dart';
 import 'package:autolog/models/service_log.dart';
 import 'package:autolog/models/vehicle.dart';
 import 'package:autolog/providers/auth_provider.dart';
+import 'package:autolog/providers/service_provider.dart';
 import 'package:autolog/providers/vehicle_provider.dart';
+import 'package:autolog/models/user.dart';
+import 'package:autolog/services/session_service.dart';
 import 'package:autolog/screens/vehicles/add_edit_vehicle_screen.dart';
 import 'package:autolog/utils/service_log_csv_exporter.dart';
 
@@ -46,6 +49,19 @@ void main() {
     expect(find.text('AutoLog'), findsWidgets);
   });
 
+  testWidgets('guest can enter without registering',
+      (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(const AutoLogApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Lanjutkan sebagai Tamu'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Mode Tamu: data tersimpan'), findsOneWidget);
+    expect((await SessionService.getUser())?.isGuest, isTrue);
+  });
+
   testWidgets('Edit vehicle screen shows edit mode for existing vehicle',
       (WidgetTester tester) async {
     await tester.pumpWidget(
@@ -73,5 +89,80 @@ void main() {
     expect(find.text('Edit Kendaraan'), findsOneWidget);
     expect(find.text('Simpan Perubahan'), findsWidgets);
     expect(find.text('Honda Vario 160'), findsWidgets);
+  });
+
+  test('guest vehicle and service data stays in local storage', () async {
+    SharedPreferences.setMockInitialValues({});
+    await SessionService.saveUser(
+      User(
+        id: 0,
+        name: 'Tamu',
+        email: 'guest@local.autolog',
+        isGuest: true,
+      ),
+    );
+
+    final vehicles = VehicleProvider();
+    await vehicles.fetchVehicles(0);
+    expect(vehicles.vehicles, isEmpty);
+    expect(
+      await vehicles.addVehicle(
+        userId: 0,
+        type: 'motor',
+        brandModel: 'Honda Vario',
+        licensePlate: 'B 1234 XYZ',
+        currentOdometer: 12000,
+      ),
+      isTrue,
+    );
+
+    final vehicle = vehicles.activeVehicle!;
+    final services = ServiceProvider();
+    await services.fetchServiceTypes();
+    await services.fetchVehicleData(vehicle.id);
+    expect(services.serviceTypes, isNotEmpty);
+
+    final now = DateTime.now();
+    final date =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    expect(
+      await services.addServiceLog(
+        vehicleId: vehicle.id,
+        serviceTypeId: services.serviceTypes.first.id,
+        serviceDate: date,
+        odometerKm: 12500,
+        cost: 150000,
+        workshopName: 'Bengkel Lokal',
+      ),
+      isTrue,
+    );
+    expect(services.serviceLogs, hasLength(1));
+    expect(services.expenses?.totalAllTime, 150000);
+    expect(services.reminders, hasLength(1));
+
+    final log = services.serviceLogs.single;
+    expect(
+      await services.updateServiceLog(
+        serviceLogId: log.id,
+        vehicleId: vehicle.id,
+        serviceTypeId: log.serviceTypeId,
+        serviceDate: date,
+        odometerKm: 12500,
+        cost: 175000,
+        workshopName: 'Bengkel Lokal',
+      ),
+      isTrue,
+    );
+    expect(services.expenses?.totalAllTime, 175000);
+    expect(
+      await services.deleteServiceLog(log.id, vehicleId: vehicle.id),
+      isTrue,
+    );
+    expect(services.serviceLogs, isEmpty);
+
+    final restored = VehicleProvider();
+    await restored.fetchVehicles(0);
+    expect(restored.vehicles, hasLength(1));
+    expect(restored.vehicles.single.brandModel, 'Honda Vario');
   });
 }

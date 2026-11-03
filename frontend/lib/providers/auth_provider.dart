@@ -6,10 +6,13 @@ import '../services/session_service.dart';
 class AuthProvider extends ChangeNotifier {
   User? _currentUser;
   bool _isLoading = false;
+  bool _isInitializing = true;
   String? _errorMessage;
 
   User? get currentUser => _currentUser;
   bool get isAuthenticated => _currentUser != null;
+  bool get isInitializing => _isInitializing;
+  bool get isGuest => _currentUser?.isGuest ?? false;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
@@ -19,13 +22,37 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> _loadSession() async {
     final user = await SessionService.getUser();
-    if (user == null || user.token == null || user.token!.isEmpty) {
+    if (user == null ||
+        (!user.isGuest && (user.token == null || user.token!.isEmpty))) {
       await SessionService.clearUser();
       _currentUser = null;
     } else {
       _currentUser = user;
     }
+    _isInitializing = false;
     notifyListeners();
+  }
+
+  Future<void> startGuestSession() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final user = User(
+        id: 0,
+        name: 'Tamu',
+        email: 'guest@local.autolog',
+        isGuest: true,
+      );
+      await SessionService.saveUser(user);
+      _currentUser = user;
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = 'Gagal memulai mode tamu: $e';
+      notifyListeners();
+    }
   }
 
   Future<bool> login(String email, String password) async {

@@ -79,6 +79,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final vp = context.watch<VehicleProvider>();
     final sp = context.watch<ServiceProvider>();
+    final isGuest = context.watch<AuthProvider>().isGuest;
     final activeVehicle = vp.activeVehicle;
 
     final allReminders = sp.reminders;
@@ -217,6 +218,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     }
                   : null,
             ),
+
+            if (isGuest) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0D9488).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.phone_android, color: Color(0xFF0D9488)),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Mode Tamu: data tersimpan di perangkat ini saja dan tidak dikirim ke cloud.',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
 
             if (activeVehicle != null) ...[
               const SizedBox(height: 16),

@@ -154,6 +154,7 @@ Dibangun dengan arsitektur bersih dan modular menggunakan **Provider State Manag
 ### Fitur Aplikasi Mobile:
 1. **Login & Registrasi Pengguna**:
    - Validasi form interaktif.
+   - Mode tamu tanpa registrasi; kendaraan, servis, pengingat, dan biaya tamu disimpan lokal di perangkat dan tidak dikirim ke database cloud. Data lokal dapat hilang jika aplikasi dihapus atau data aplikasi dibersihkan.
    - Konfigurasi server URL fleksibel langsung dari aplikasi (dialog tombol setting di kanan atas).
    - Penyimpanan sesi pengguna otomatis via `SharedPreferences`.
 2. **Dashboard / Garasi Saya**:
@@ -169,11 +170,11 @@ Dibangun dengan arsitektur bersih dan modular menggunakan **Provider State Manag
    - Menampilkan catatan pengerjaan servis terurut dari yang terbaru.
    - Fitur pencarian berdasarkan nama servis, bengkel, atau catatan.
    - Ekspor seluruh riwayat kendaraan aktif ke file CSV berformat UTF-8 yang bisa dibuka di Excel dan dibagikan.
-   - Indikator badge dan dialog *preview* foto nota servis yang tersimpan di server Laragon.
+   - Indikator badge dan dialog *preview* foto nota servis; nota akun tersimpan di server Laragon, sementara nota tamu tersimpan di perangkat.
 5. **Form Tambah Log Servis**:
    - Pilihan jenis servis dari katalog API.
    - Input tanggal, KM servis, biaya dalam format Rupiah, nama bengkel, dan catatan mekanik.
-   - Fitur **Image Picker**: Mengambil foto nota servis langsung via kamera atau galeri untuk diunggah ke server via *multipart upload*.
+   - Fitur **Image Picker**: Mengambil foto nota servis langsung via kamera atau galeri; foto akun diunggah ke server, sedangkan foto tamu disimpan lokal.
 6. **Rekapitulasi Biaya Servis (Expense Summary)**:
    - Total pengeluaran sepanjang masa, tahun ini, dan bulan ini.
    - Estimasi biaya perawatan per kilometer (**Rp / KM**).

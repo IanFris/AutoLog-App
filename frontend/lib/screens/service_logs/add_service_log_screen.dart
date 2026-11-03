@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../models/service_log.dart';
 import '../../models/vehicle.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/service_provider.dart';
 import '../../utils/date_formatter.dart';
 
@@ -197,6 +198,7 @@ class _AddServiceLogScreenState extends State<AddServiceLogScreen> {
   void _save() async {
     if (!_formKey.currentState!.validate()) return;
     if (widget.vehicle == null) return;
+    final isGuest = context.read<AuthProvider>().isGuest;
 
     if (_selectedServiceTypeId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -244,9 +246,13 @@ class _AddServiceLogScreenState extends State<AddServiceLogScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            widget.serviceLog != null
-                ? 'Catatan servis berhasil diperbarui!'
-                : 'Catatan servis berhasil disimpan ke server!',
+            isGuest
+                ? (widget.serviceLog != null
+                    ? 'Catatan servis berhasil diperbarui di perangkat.'
+                    : 'Catatan servis disimpan di perangkat.')
+                : widget.serviceLog != null
+                    ? 'Catatan servis berhasil diperbarui!'
+                    : 'Catatan servis berhasil disimpan ke server!',
           ),
         ),
       );

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -37,6 +38,7 @@ class _ServiceLogListScreenState extends State<ServiceLogListScreen> {
   void _showReceiptDialog(BuildContext context, ServiceLog log) {
     if (log.receiptPhotoUrl == null || log.receiptPhotoUrl!.isEmpty) return;
 
+    final isLocalReceipt = !log.receiptPhotoUrl!.startsWith('uploads/');
     final fullUrl = '${ApiConstants.uploadsBaseUrl}${log.receiptPhotoUrl}';
 
     showDialog(
@@ -55,23 +57,34 @@ class _ServiceLogListScreenState extends State<ServiceLogListScreen> {
             const SizedBox(height: 12),
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                fullUrl,
-                fit: BoxFit.contain,
-                loadingBuilder: (ctx, child, progress) {
-                  if (progress == null) return child;
-                  return const SizedBox(
-                    height: 150,
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                },
-                errorBuilder: (ctx, _, __) => Container(
-                  height: 120,
-                  alignment: Alignment.center,
-                  color: Colors.grey.shade200,
-                  child: const Text('Foto nota tidak dapat dimuat.'),
-                ),
-              ),
+              child: isLocalReceipt
+                  ? Image.file(
+                      File(log.receiptPhotoUrl!),
+                      fit: BoxFit.contain,
+                      errorBuilder: (ctx, _, __) => Container(
+                        height: 120,
+                        alignment: Alignment.center,
+                        color: Colors.grey.shade200,
+                        child: const Text('Foto nota tidak dapat dimuat.'),
+                      ),
+                    )
+                  : Image.network(
+                      fullUrl,
+                      fit: BoxFit.contain,
+                      loadingBuilder: (ctx, child, progress) {
+                        if (progress == null) return child;
+                        return const SizedBox(
+                          height: 150,
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      },
+                      errorBuilder: (ctx, _, __) => Container(
+                        height: 120,
+                        alignment: Alignment.center,
+                        color: Colors.grey.shade200,
+                        child: const Text('Foto nota tidak dapat dimuat.'),
+                      ),
+                    ),
             ),
           ],
         ),
