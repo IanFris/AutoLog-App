@@ -144,4 +144,86 @@ class VehicleProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  Future<bool> updateVehicle({
+    required int vehicleId,
+    String? type,
+    String? brandModel,
+    String? licensePlate,
+    int? currentOdometer,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await ApiService.updateVehicle(
+        vehicleId: vehicleId,
+        type: type,
+        brandModel: brandModel,
+        licensePlate: licensePlate,
+        currentOdometer: currentOdometer,
+      );
+
+      final index = _vehicles.indexWhere((v) => v.id == vehicleId);
+      final updatedVehicle = (index >= 0)
+          ? _vehicles[index].copyWith(
+              type: type != null
+                  ? (type == 'mobil' ? VehicleType.mobil : VehicleType.motor)
+                  : _vehicles[index].type,
+              brandModel: brandModel ?? _vehicles[index].brandModel,
+              licensePlate: licensePlate ?? _vehicles[index].licensePlate,
+              currentOdometer:
+                  currentOdometer ?? _vehicles[index].currentOdometer,
+            )
+          : _activeVehicle;
+
+      if (updatedVehicle != null) {
+        if (_activeVehicle?.id == vehicleId) {
+          _activeVehicle = updatedVehicle;
+        }
+        if (index >= 0) {
+          _vehicles[index] = updatedVehicle;
+        }
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteVehicle(int vehicleId) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await ApiService.deleteVehicle(vehicleId);
+
+      _vehicles.removeWhere((v) => v.id == vehicleId);
+      if (_activeVehicle?.id == vehicleId) {
+        _activeVehicle = _vehicles.isNotEmpty ? _vehicles.first : null;
+        if (_activeVehicle != null) {
+          await SessionService.saveActiveVehicleId(_activeVehicle!.id);
+        } else {
+          await SessionService.clearActiveVehicleId();
+        }
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
 }

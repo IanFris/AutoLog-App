@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import '../../models/service_log.dart';
 import '../../models/vehicle.dart';
 import '../../providers/service_provider.dart';
 import '../../utils/date_formatter.dart';
@@ -10,11 +11,13 @@ import '../../utils/date_formatter.dart';
 class AddServiceLogScreen extends StatefulWidget {
   final Vehicle? vehicle;
   final int? initialServiceTypeId;
+  final ServiceLog? serviceLog;
 
   const AddServiceLogScreen({
     super.key,
     required this.vehicle,
     this.initialServiceTypeId,
+    this.serviceLog,
   });
 
   @override
@@ -46,14 +49,21 @@ class _AddServiceLogScreenState extends State<AddServiceLogScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedServiceTypeId = widget.initialServiceTypeId;
-    _selectedDate = DateTime.now();
+    final serviceLog = widget.serviceLog;
+    _selectedServiceTypeId =
+        serviceLog?.serviceTypeId ?? widget.initialServiceTypeId;
+    _selectedDate = serviceLog?.serviceDate ?? DateTime.now();
     _odometerController = TextEditingController(
-      text: widget.vehicle?.currentOdometer.toString() ?? '0',
+      text: (serviceLog?.odometerKm ?? widget.vehicle?.currentOdometer ?? 0)
+          .toString(),
     );
-    _costController = TextEditingController();
-    _workshopController = TextEditingController(text: 'Bengkel Resmi');
-    _notesController = TextEditingController();
+    _costController = TextEditingController(
+      text: serviceLog != null ? serviceLog.cost.toStringAsFixed(0) : '',
+    );
+    _workshopController = TextEditingController(
+      text: serviceLog?.workshopName ?? 'Bengkel Resmi',
+    );
+    _notesController = TextEditingController(text: serviceLog?.notes ?? '');
   }
 
   @override
@@ -138,6 +148,52 @@ class _AddServiceLogScreenState extends State<AddServiceLogScreen> {
     );
   }
 
+  Future<void> _deleteServiceLog() async {
+    final serviceLog = widget.serviceLog;
+    if (serviceLog == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hapus catatan servis?'),
+        content: Text(
+            'Catatan ${serviceLog.serviceTypeName ?? 'servis'} akan dihapus dari riwayat kendaraan.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Batal')),
+          FilledButton(
+            style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFEF4444)),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final sp = context.read<ServiceProvider>();
+    final success = await sp.deleteServiceLog(serviceLog.id,
+        vehicleId: serviceLog.vehicleId);
+
+    if (!mounted) return;
+    if (success) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Catatan servis berhasil dihapus.')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(sp.errorMessage ?? 'Gagal menghapus catatan servis.'),
+          backgroundColor: const Color(0xFFEF4444),
+        ),
+      );
+    }
+  }
+
   void _save() async {
     if (!_formKey.currentState!.validate()) return;
     if (widget.vehicle == null) return;
@@ -157,22 +213,42 @@ class _AddServiceLogScreenState extends State<AddServiceLogScreen> {
     final dateStr =
         "${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}";
 
-    final success = await sp.addServiceLog(
-      vehicleId: widget.vehicle!.id,
-      serviceTypeId: _selectedServiceTypeId!,
-      serviceDate: dateStr,
-      odometerKm: odo,
-      cost: cost,
-      workshopName: _workshopController.text.trim(),
-      notes: _notesController.text.trim(),
-      receiptPhoto: _receiptPhoto,
-    );
+    bool success;
+    if (widget.serviceLog != null) {
+      success = await sp.updateServiceLog(
+        serviceLogId: widget.serviceLog!.id,
+        vehicleId: widget.vehicle!.id,
+        serviceTypeId: _selectedServiceTypeId!,
+        serviceDate: dateStr,
+        odometerKm: odo,
+        cost: cost,
+        workshopName: _workshopController.text.trim(),
+        notes: _notesController.text.trim(),
+        receiptPhoto: _receiptPhoto,
+      );
+    } else {
+      success = await sp.addServiceLog(
+        vehicleId: widget.vehicle!.id,
+        serviceTypeId: _selectedServiceTypeId!,
+        serviceDate: dateStr,
+        odometerKm: odo,
+        cost: cost,
+        workshopName: _workshopController.text.trim(),
+        notes: _notesController.text.trim(),
+        receiptPhoto: _receiptPhoto,
+      );
+    }
 
     if (success && mounted) {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Catatan servis berhasil disimpan ke server!')),
+        SnackBar(
+          content: Text(
+            widget.serviceLog != null
+                ? 'Catatan servis berhasil diperbarui!'
+                : 'Catatan servis berhasil disimpan ke server!',
+          ),
+        ),
       );
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -193,15 +269,24 @@ class _AddServiceLogScreenState extends State<AddServiceLogScreen> {
       _selectedServiceTypeId = types.first.id;
     }
 
+    final isEditMode = widget.serviceLog != null;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Catat Pemeliharaan Servis'),
+        title: Text(
+            isEditMode ? 'Edit Catatan Servis' : 'Catat Pemeliharaan Servis'),
         actions: [
+          if (isEditMode)
+            IconButton(
+              tooltip: 'Hapus catatan servis',
+              onPressed: sp.isLoading ? null : _deleteServiceLog,
+              icon: const Icon(Icons.delete_outline, color: Color(0xFFEF4444)),
+            ),
           TextButton(
             onPressed: sp.isLoading ? null : _save,
-            child: const Text(
-              'Simpan',
-              style: TextStyle(
+            child: Text(
+              isEditMode ? 'Simpan Perubahan' : 'Simpan',
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
                 color: Color(0xFF0D9488),
@@ -490,8 +575,10 @@ class _AddServiceLogScreenState extends State<AddServiceLogScreen> {
                       child: CircularProgressIndicator(
                           color: Colors.white, strokeWidth: 2),
                     )
-                  : const Text('Simpan Catatan Servis',
-                      style: TextStyle(fontSize: 16)),
+                  : Text(
+                      isEditMode ? 'Simpan Perubahan' : 'Simpan Catatan Servis',
+                      style: const TextStyle(fontSize: 16),
+                    ),
             ),
           ],
         ),

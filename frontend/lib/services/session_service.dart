@@ -33,6 +33,11 @@ class SessionService {
     await prefs.setInt(_keyActiveVehicleId, vehicleId);
   }
 
+  static Future<void> clearActiveVehicleId() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_keyActiveVehicleId);
+  }
+
   static Future<int?> getActiveVehicleId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt(_keyActiveVehicleId);

@@ -22,7 +22,12 @@ class _AddEditVehicleScreenState extends State<AddEditVehicleScreen> {
   late final TextEditingController _odometerController;
 
   final List<String> _popularBrands = [
-    'Honda Vario 160', 'Yamaha NMAX 155', 'Honda Beat', 'Toyota Avanza', 'Honda HR-V', 'Mitsubishi Xpander'
+    'Honda Vario 160',
+    'Yamaha NMAX 155',
+    'Honda Beat',
+    'Toyota Avanza',
+    'Honda HR-V',
+    'Mitsubishi Xpander'
   ];
 
   @override
@@ -45,6 +50,53 @@ class _AddEditVehicleScreenState extends State<AddEditVehicleScreen> {
     super.dispose();
   }
 
+  Future<void> _deleteVehicle() async {
+    final vehicle = widget.vehicle;
+    if (vehicle == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hapus Kendaraan?'),
+        content: Text(
+          'Kendaraan ${vehicle.brandModel} (${vehicle.licensePlate}) akan dihapus beserta semua data riwayat terkait.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFEF4444)),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final vp = context.read<VehicleProvider>();
+    final success = await vp.deleteVehicle(vehicle.id);
+
+    if (!mounted) return;
+    if (success) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kendaraan berhasil dihapus.')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(vp.errorMessage ?? 'Gagal menghapus kendaraan.'),
+          backgroundColor: const Color(0xFFEF4444),
+        ),
+      );
+    }
+  }
+
   void _save() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -53,22 +105,38 @@ class _AddEditVehicleScreenState extends State<AddEditVehicleScreen> {
     final user = auth.currentUser;
     if (user == null) return;
 
-    final odometer = int.tryParse(
-            _odometerController.text.replaceAll('.', '').trim()) ??
-        0;
+    final odometer =
+        int.tryParse(_odometerController.text.replaceAll('.', '').trim()) ?? 0;
 
-    final success = await vp.addVehicle(
-      userId: user.id,
-      type: _selectedType,
-      brandModel: _brandModelController.text.trim(),
-      licensePlate: _plateController.text.trim().toUpperCase(),
-      currentOdometer: odometer,
-    );
+    bool success;
+    if (widget.vehicle != null) {
+      success = await vp.updateVehicle(
+        vehicleId: widget.vehicle!.id,
+        type: _selectedType,
+        brandModel: _brandModelController.text.trim(),
+        licensePlate: _plateController.text.trim().toUpperCase(),
+        currentOdometer: odometer,
+      );
+    } else {
+      success = await vp.addVehicle(
+        userId: user.id,
+        type: _selectedType,
+        brandModel: _brandModelController.text.trim(),
+        licensePlate: _plateController.text.trim().toUpperCase(),
+        currentOdometer: odometer,
+      );
+    }
 
     if (success && mounted) {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Kendaraan berhasil ditambahkan!')),
+        SnackBar(
+          content: Text(
+            widget.vehicle != null
+                ? 'Kendaraan berhasil diperbarui!'
+                : 'Kendaraan berhasil ditambahkan!',
+          ),
+        ),
       );
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -83,16 +151,23 @@ class _AddEditVehicleScreenState extends State<AddEditVehicleScreen> {
   @override
   Widget build(BuildContext context) {
     final vp = context.watch<VehicleProvider>();
+    final isEditMode = widget.vehicle != null;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tambah Kendaraan'),
+        title: Text(isEditMode ? 'Edit Kendaraan' : 'Tambah Kendaraan'),
         actions: [
+          if (isEditMode)
+            IconButton(
+              tooltip: 'Hapus kendaraan',
+              onPressed: vp.isLoading ? null : _deleteVehicle,
+              icon: const Icon(Icons.delete_outline, color: Color(0xFFEF4444)),
+            ),
           TextButton(
             onPressed: vp.isLoading ? null : _save,
-            child: const Text(
-              'Simpan',
-              style: TextStyle(
+            child: Text(
+              isEditMode ? 'Simpan Perubahan' : 'Simpan',
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
                 color: Color(0xFF0D9488),
@@ -143,7 +218,8 @@ class _AddEditVehicleScreenState extends State<AddEditVehicleScreen> {
                 prefixIcon: Icon(Icons.drive_file_rename_outline),
               ),
               validator: (val) {
-                if (val == null || val.trim().isEmpty) return 'Merk & model wajib diisi';
+                if (val == null || val.trim().isEmpty)
+                  return 'Merk & model wajib diisi';
                 return null;
               },
             ),
@@ -157,7 +233,8 @@ class _AddEditVehicleScreenState extends State<AddEditVehicleScreen> {
               children: _popularBrands.map((b) {
                 return ActionChip(
                   label: Text(b, style: const TextStyle(fontSize: 11)),
-                  onPressed: () => setState(() => _brandModelController.text = b),
+                  onPressed: () =>
+                      setState(() => _brandModelController.text = b),
                   padding: EdgeInsets.zero,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 );
@@ -176,7 +253,8 @@ class _AddEditVehicleScreenState extends State<AddEditVehicleScreen> {
                 prefixIcon: Icon(Icons.credit_card),
               ),
               validator: (val) {
-                if (val == null || val.trim().isEmpty) return 'Nomor polisi wajib diisi';
+                if (val == null || val.trim().isEmpty)
+                  return 'Nomor polisi wajib diisi';
                 return null;
               },
             ),
@@ -208,9 +286,13 @@ class _AddEditVehicleScreenState extends State<AddEditVehicleScreen> {
                   ? const SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2),
                     )
-                  : const Text('Simpan Kendaraan', style: TextStyle(fontSize: 16)),
+                  : Text(
+                      isEditMode ? 'Simpan Perubahan' : 'Simpan Kendaraan',
+                      style: const TextStyle(fontSize: 16),
+                    ),
             ),
           ],
         ),
@@ -252,7 +334,9 @@ class _AddEditVehicleScreenState extends State<AddEditVehicleScreen> {
             Icon(
               icon,
               size: 28,
-              color: isSelected ? const Color(0xFF0D9488) : const Color(0xFF64748B),
+              color: isSelected
+                  ? const Color(0xFF0D9488)
+                  : const Color(0xFF64748B),
             ),
             const SizedBox(height: 6),
             Text(
@@ -269,4 +353,3 @@ class _AddEditVehicleScreenState extends State<AddEditVehicleScreen> {
     );
   }
 }
-

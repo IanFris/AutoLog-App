@@ -9,6 +9,8 @@ class VehicleHeaderCard extends StatelessWidget {
   final Function(Vehicle) onVehicleChanged;
   final Function(int newOdometer) onOdometerUpdated;
   final VoidCallback onAddVehicle;
+  final VoidCallback? onEditVehicle;
+  final VoidCallback? onDeleteVehicle;
 
   const VehicleHeaderCard({
     super.key,
@@ -17,6 +19,8 @@ class VehicleHeaderCard extends StatelessWidget {
     required this.onVehicleChanged,
     required this.onOdometerUpdated,
     required this.onAddVehicle,
+    this.onEditVehicle,
+    this.onDeleteVehicle,
   });
 
   @override
@@ -96,6 +100,10 @@ class VehicleHeaderCard extends StatelessWidget {
                 onSelected: (val) {
                   if (val == '__add__') {
                     onAddVehicle();
+                  } else if (val == '__edit__') {
+                    onEditVehicle?.call();
+                  } else if (val == '__delete__') {
+                    onDeleteVehicle?.call();
                   } else if (val is Vehicle) {
                     onVehicleChanged(val);
                   }
@@ -152,6 +160,30 @@ class VehicleHeaderCard extends StatelessWidget {
                       ],
                     ),
                   ),
+                  if (onEditVehicle != null)
+                    const PopupMenuItem<String>(
+                      value: '__edit__',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit_outlined,
+                              size: 18, color: Color(0xFF3B82F6)),
+                          SizedBox(width: 10),
+                          Text('Edit Kendaraan'),
+                        ],
+                      ),
+                    ),
+                  if (onDeleteVehicle != null)
+                    const PopupMenuItem<String>(
+                      value: '__delete__',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_outline,
+                              size: 18, color: Color(0xFFEF4444)),
+                          SizedBox(width: 10),
+                          Text('Hapus Kendaraan'),
+                        ],
+                      ),
+                    ),
                 ],
                 child: Container(
                   padding:
@@ -312,4 +344,3 @@ class VehicleHeaderCard extends StatelessWidget {
     );
   }
 }
-

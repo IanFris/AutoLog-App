@@ -132,4 +132,64 @@ class ServiceProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  Future<bool> updateServiceLog({
+    required int serviceLogId,
+    required int vehicleId,
+    required int serviceTypeId,
+    required String serviceDate,
+    required int odometerKm,
+    required double cost,
+    String? workshopName,
+    String? notes,
+    XFile? receiptPhoto,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await ApiService.updateServiceLog(
+        serviceLogId: serviceLogId,
+        vehicleId: vehicleId,
+        serviceTypeId: serviceTypeId,
+        serviceDate: serviceDate,
+        odometerKm: odometerKm,
+        cost: cost,
+        workshopName: workshopName,
+        notes: notes,
+        receiptPhoto: receiptPhoto,
+      );
+
+      if (_vehicleId == vehicleId) {
+        await fetchVehicleData(vehicleId);
+      }
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteServiceLog(int serviceLogId,
+      {required int vehicleId}) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await ApiService.deleteServiceLog(serviceLogId);
+      if (_vehicleId == vehicleId) {
+        await fetchVehicleData(vehicleId);
+      }
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
 }

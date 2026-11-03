@@ -387,14 +387,103 @@ class _ServiceLogListScreenState extends State<ServiceLogListScreen> {
 
                                 const SizedBox(width: 8),
 
-                                // Cost
-                                Text(
-                                  CurrencyFormatter.format(item.cost),
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w800,
-                                    color: Color(0xFF0D9488),
-                                  ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      CurrencyFormatter.format(item.cost),
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w800,
+                                        color: Color(0xFF0D9488),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    PopupMenuButton<String>(
+                                      tooltip: 'Aksi catatan servis',
+                                      onSelected: (value) async {
+                                        if (value == 'edit') {
+                                          if (!mounted) return;
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  AddServiceLogScreen(
+                                                vehicle: vehicle,
+                                                serviceLog: item,
+                                              ),
+                                            ),
+                                          );
+                                          return;
+                                        }
+
+                                        if (value == 'delete') {
+                                          final confirmed =
+                                              await showDialog<bool>(
+                                            context: context,
+                                            builder: (ctx) => AlertDialog(
+                                              title: const Text(
+                                                  'Hapus catatan servis?'),
+                                              content: Text(
+                                                'Catatan ${item.serviceTypeName ?? 'servis'} pada ${DateFormatter.format(item.serviceDate)} akan dihapus.',
+                                              ),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.of(ctx)
+                                                          .pop(false),
+                                                  child: const Text('Batal'),
+                                                ),
+                                                FilledButton(
+                                                  style: FilledButton.styleFrom(
+                                                    backgroundColor:
+                                                        const Color(0xFFEF4444),
+                                                  ),
+                                                  onPressed: () =>
+                                                      Navigator.of(ctx)
+                                                          .pop(true),
+                                                  child: const Text('Hapus'),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+
+                                          if (confirmed != true) return;
+
+                                          final success =
+                                              await sp.deleteServiceLog(item.id,
+                                                  vehicleId: item.vehicleId);
+                                          if (!mounted) return;
+                                          if (success) {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                  content: Text(
+                                                      'Catatan servis berhasil dihapus.')),
+                                            );
+                                          } else {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                content: Text(sp.errorMessage ??
+                                                    'Gagal menghapus catatan servis.'),
+                                                backgroundColor:
+                                                    const Color(0xFFEF4444),
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      },
+                                      itemBuilder: (ctx) => const [
+                                        PopupMenuItem(
+                                            value: 'edit', child: Text('Edit')),
+                                        PopupMenuItem(
+                                            value: 'delete',
+                                            child: Text('Hapus')),
+                                      ],
+                                      child:
+                                          const Icon(Icons.more_vert, size: 18),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),

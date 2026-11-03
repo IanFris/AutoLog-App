@@ -169,6 +169,46 @@ class ApiService {
     }
   }
 
+  static Future<void> updateVehicle({
+    required int vehicleId,
+    String? type,
+    String? brandModel,
+    String? licensePlate,
+    int? currentOdometer,
+  }) async {
+    try {
+      final res = await http.put(
+        Uri.parse(ApiConstants.vehicles),
+        headers: await _authenticatedHeaders(jsonContentType: true),
+        body: jsonEncode({
+          'id': vehicleId,
+          if (type != null) 'type': type,
+          if (brandModel != null) 'brand_model': brandModel,
+          if (licensePlate != null) 'license_plate': licensePlate,
+          if (currentOdometer != null) 'current_odometer': currentOdometer,
+        }),
+      );
+      _handleResponse(res);
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Gagal memperbarui kendaraan: $e');
+    }
+  }
+
+  static Future<void> deleteVehicle(int vehicleId) async {
+    try {
+      final res = await http.delete(
+        Uri.parse(ApiConstants.vehicles),
+        headers: await _authenticatedHeaders(jsonContentType: true),
+        body: jsonEncode({'id': vehicleId}),
+      );
+      _handleResponse(res);
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Gagal menghapus kendaraan: $e');
+    }
+  }
+
   // --- 3. SERVICE TYPES ---
   static Future<List<ServiceType>> getServiceTypes() async {
     try {
@@ -242,6 +282,64 @@ class ApiService {
     } catch (e) {
       if (e is ApiException) rethrow;
       throw ApiException('Gagal menyimpan catatan servis: $e');
+    }
+  }
+
+  static Future<ServiceLog> updateServiceLog({
+    required int serviceLogId,
+    required int vehicleId,
+    required int serviceTypeId,
+    required String serviceDate,
+    required int odometerKm,
+    required double cost,
+    String? workshopName,
+    String? notes,
+    XFile? receiptPhoto,
+  }) async {
+    try {
+      final uri = Uri.parse(ApiConstants.serviceLogs);
+      final request = http.MultipartRequest('PUT', uri);
+      request.headers.addAll(await _authenticatedHeaders());
+
+      request.fields['id'] = serviceLogId.toString();
+      request.fields['vehicle_id'] = vehicleId.toString();
+      request.fields['service_type_id'] = serviceTypeId.toString();
+      request.fields['service_date'] = serviceDate;
+      request.fields['odometer_km'] = odometerKm.toString();
+      request.fields['cost'] = cost.toString();
+      if (workshopName != null) request.fields['workshop_name'] = workshopName;
+      if (notes != null) request.fields['notes'] = notes;
+
+      if (receiptPhoto != null) {
+        final bytes = await receiptPhoto.readAsBytes();
+        request.files.add(http.MultipartFile.fromBytes(
+          'receipt_photo',
+          bytes,
+          filename: receiptPhoto.name,
+        ));
+      }
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      final json = _handleResponse(response);
+      return ServiceLog.fromJson(json['data'] as Map<String, dynamic>);
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Gagal memperbarui catatan servis: $e');
+    }
+  }
+
+  static Future<void> deleteServiceLog(int serviceLogId) async {
+    try {
+      final res = await http.delete(
+        Uri.parse(ApiConstants.serviceLogs),
+        headers: await _authenticatedHeaders(jsonContentType: true),
+        body: jsonEncode({'id': serviceLogId}),
+      );
+      _handleResponse(res);
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Gagal menghapus catatan servis: $e');
     }
   }
 

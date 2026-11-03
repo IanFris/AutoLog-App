@@ -49,20 +49,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _refresh() async {
     final vp = context.read<VehicleProvider>();
     if (vp.activeVehicle != null) {
-      await context.read<ServiceProvider>().fetchVehicleData(vp.activeVehicle!.id);
+      await context
+          .read<ServiceProvider>()
+          .fetchVehicleData(vp.activeVehicle!.id);
     }
   }
 
   List<ComponentReminder> _getFilteredReminders(List<ComponentReminder> list) {
     if (_selectedStatusFilter == 'all') return list;
     if (_selectedStatusFilter == 'merah') {
-      return list.where((r) => r.statusColor == ReminderColorStatus.merah).toList();
+      return list
+          .where((r) => r.statusColor == ReminderColorStatus.merah)
+          .toList();
     }
     if (_selectedStatusFilter == 'kuning') {
-      return list.where((r) => r.statusColor == ReminderColorStatus.kuning).toList();
+      return list
+          .where((r) => r.statusColor == ReminderColorStatus.kuning)
+          .toList();
     }
     if (_selectedStatusFilter == 'hijau') {
-      return list.where((r) => r.statusColor == ReminderColorStatus.hijau).toList();
+      return list
+          .where((r) => r.statusColor == ReminderColorStatus.hijau)
+          .toList();
     }
     return list;
   }
@@ -96,7 +104,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 color: const Color(0xFF0D9488).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.directions_car, color: Color(0xFF0D9488), size: 20),
+              child: const Icon(Icons.directions_car,
+                  color: Color(0xFF0D9488), size: 20),
             ),
             const SizedBox(width: 10),
             const Column(
@@ -150,9 +159,63 @@ class _DashboardScreenState extends State<DashboardScreen> {
               },
               onAddVehicle: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const AddEditVehicleScreen()),
+                  MaterialPageRoute(
+                      builder: (_) => const AddEditVehicleScreen()),
                 );
               },
+              onEditVehicle: activeVehicle != null
+                  ? () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              AddEditVehicleScreen(vehicle: activeVehicle),
+                        ),
+                      );
+                    }
+                  : null,
+              onDeleteVehicle: activeVehicle != null
+                  ? () async {
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Hapus kendaraan?'),
+                          content: Text(
+                            'Kendaraan ${activeVehicle.brandModel} (${activeVehicle.licensePlate}) akan dihapus permanen.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(false),
+                              child: const Text('Batal'),
+                            ),
+                            FilledButton(
+                              style: FilledButton.styleFrom(
+                                  backgroundColor: const Color(0xFFEF4444)),
+                              onPressed: () => Navigator.of(ctx).pop(true),
+                              child: const Text('Hapus'),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (confirmed != true) return;
+
+                      final success = await vp.deleteVehicle(activeVehicle.id);
+                      if (mounted && success) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text('Kendaraan berhasil dihapus.')),
+                        );
+                      } else if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(vp.errorMessage ??
+                                'Gagal menghapus kendaraan.'),
+                            backgroundColor: const Color(0xFFEF4444),
+                          ),
+                        );
+                      }
+                    }
+                  : null,
             ),
 
             if (activeVehicle != null) ...[
@@ -175,7 +238,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       onTap: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) => AddServiceLogScreen(vehicle: activeVehicle),
+                            builder: (_) =>
+                                AddServiceLogScreen(vehicle: activeVehicle),
                           ),
                         );
                       },
@@ -214,7 +278,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   Text(
                     '${allReminders.length} Komponen',
-                    style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                    style:
+                        const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
                   ),
                 ],
               ),
@@ -227,11 +292,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     _buildFilterChip('all', 'Semua (${allReminders.length})'),
                     const SizedBox(width: 6),
-                    _buildFilterChip('merah', 'Wajib Servis ($redCount)', color: const Color(0xFFEF4444)),
+                    _buildFilterChip('merah', 'Wajib Servis ($redCount)',
+                        color: const Color(0xFFEF4444)),
                     const SizedBox(width: 6),
-                    _buildFilterChip('kuning', 'Mendekati ($yellowCount)', color: const Color(0xFFF59E0B)),
+                    _buildFilterChip('kuning', 'Mendekati ($yellowCount)',
+                        color: const Color(0xFFF59E0B)),
                     const SizedBox(width: 6),
-                    _buildFilterChip('hijau', 'Aman ($greenCount)', color: const Color(0xFF10B981)),
+                    _buildFilterChip('hijau', 'Aman ($greenCount)',
+                        color: const Color(0xFF10B981)),
                   ],
                 ),
               ),
@@ -250,12 +318,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 EmptyStateWidget(
                   icon: Icons.check_circle_outline,
                   title: 'Tidak Ada Komponen Terdaftar',
-                  subtitle: 'Semua komponen dalam kondisi baik atau filter saat ini kosong.',
+                  subtitle:
+                      'Semua komponen dalam kondisi baik atau filter saat ini kosong.',
                   buttonText: 'Catat Servis Baru',
                   onButtonPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => AddServiceLogScreen(vehicle: activeVehicle),
+                        builder: (_) =>
+                            AddServiceLogScreen(vehicle: activeVehicle),
                       ),
                     );
                   },
@@ -287,7 +357,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildAttentionBanner(int redCount, int yellowCount) {
     final isCritical = redCount > 0;
-    final color = isCritical ? const Color(0xFFEF4444) : const Color(0xFFF59E0B);
+    final color =
+        isCritical ? const Color(0xFFEF4444) : const Color(0xFFF59E0B);
     final title = isCritical
         ? '$redCount Komponen Wajib Servis Segera!'
         : '$yellowCount Komponen Mendekati Batas Servis!';
@@ -307,7 +378,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            child: const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
+            child: const Icon(Icons.warning_amber_rounded,
+                color: Colors.white, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -325,7 +397,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: const TextStyle(fontSize: 11, color: Color(0xFF475569)),
+                  style:
+                      const TextStyle(fontSize: 11, color: Color(0xFF475569)),
                 ),
               ],
             ),
@@ -395,4 +468,3 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 }
-
